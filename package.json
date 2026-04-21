@@ -1,0 +1,13 @@
+{
+  "name": "jagd-cert-portal-launchable",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JAGD Construction certification portal demo",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
