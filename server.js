@@ -565,6 +565,51 @@ app.get('/api/certs', (req, res) => {
 });
 
 
+
+function currentDateLabel() {
+  return TODAY.toLocaleDateString('en-US');
+}
+
+function formatDigestBody(store) {
+  const alerts = computeAlerts(store);
+  const counts = dashboard(store).counts || {};
+  const lines = [
+    `JAGD Cert Portal Daily Digest - ${currentDateLabel()}`,
+    '',
+    'Summary',
+    `- Active workers: ${counts.activeWorkers || 0}`,
+    `- Expiring 30 days: ${counts.expiring30 || 0}`,
+    `- Needs attention: ${counts.needsAttention || 0}`,
+    `- Jobs needing review: ${counts.jobsNeedingReview || 0}`,
+    '',
+    'Action Items',
+    ...(alerts.length ? alerts.map(a => `- ${a.title}: ${a.detail}`) : ['- No active alerts right now.']),
+    '',
+    'Sent automatically by the JAGD Cert Portal.'
+  ];
+  return lines.join('\n');
+}
+
+let digestSchedulerStarted = false;
+
+function startDigestScheduler() {
+  if (digestSchedulerStarted) return;
+  digestSchedulerStarted = true;
+  try {
+    const cron = require('node-cron');
+    cron.schedule('0 6 * * *', async () => {
+      try {
+        await sendDigestEmail(readStore());
+      } catch (err) {
+        console.error('Daily digest send failed', err);
+      }
+    }, { timezone: 'America/New_York' });
+    console.log('Daily digest scheduler started for 6:00 AM America/New_York');
+  } catch (err) {
+    console.error('Failed to start digest scheduler', err);
+  }
+}
+
 function buildOfficeDigestText(store) {
   const alerts = computeAlerts(store);
   const lines = [
@@ -608,17 +653,46 @@ async function sendTestDigestEmail(store) {
   return { to, from, subject };
 }
 
+
+async function sendDigestEmail(store) {
+  const nodemailer = require('nodemailer');
+  const digest = buildOfficeDigest(store);
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+
+  const info = await transporter.sendMail({
+    from: process.env.ALERTS_FROM || process.env.SMTP_USER,
+    to: digest.recipients || process.env.ALERTS_TO,
+    subject: digest.subject,
+    text: digest.body
+  });
+
+  return info;
+}
+
 app.post('/api/send-test-digest', async (req, res) => {
   try {
     const store = readStore();
-    const info = await sendTestDigestEmail(store);
+    await sendDigestEmail(store);
     store.auditLog = store.auditLog || [];
-    store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Sent test digest', detail: `${info.to}` });
+    store.auditLog.unshift({
+      time: new Date().toLocaleTimeString(),
+      action: 'Sent test digest',
+      detail: process.env.ALERTS_TO || 'Digest recipient not set'
+    });
     writeStore(store);
-    res.json({ ok: true, message: `Test digest sent to ${info.to}`, ...info });
-  } catch (error) {
-    console.error('Test digest send failed:', error);
-    res.status(500).json({ error: error.message || 'Failed to send test digest' });
+    res.json({ ok: true, message: 'Test digest sent successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to send test digest.' });
   }
 });
 
@@ -644,6 +718,8 @@ app.get('/api/admin', (req, res) => {
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+startDigestScheduler();
 
 app.listen(PORT, () => {
   console.log(`JAGD portal running on http://localhost:${PORT}`);

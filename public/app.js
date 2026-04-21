@@ -659,12 +659,12 @@ function adminView() {
       <div class="card">
         <h2>Email Alert Settings</h2>
         <div class="section">
-          <div class="tag"><strong>Office Daily Digest:</strong> Preview Only</div>
-          <div class="tag"><strong>Suggested Recipients:</strong> office / admin</div>
+          <div class="tag"><strong>Office Daily Digest:</strong> Scheduled Daily at 6:00 AM ET</div>
+          <div class="tag"><strong>Current Recipient:</strong> Alerts@jagdapps.com</div>
           <div class="tag"><strong>Suggested Send Time:</strong> 6:00 AM</div>
           <div class="tag"><strong>Employee Email Alerts:</strong> Hold for Phase 2</div>
         </div>
-        <div class="small muted">This section is preview-only for now so we can review the email format safely before turning on real sending.</div>
+        <div class="small muted">Daily office digest is now configured. Use Send Test Digest any time to verify delivery.</div>
         <div class="section button-row">
           <button class="btn dark" id="sendTestDigestBtn">Send Test Digest</button>
           <div id="sendTestDigestStatus" class="small muted"></div>
