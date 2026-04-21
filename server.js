@@ -2,6 +2,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -561,6 +562,64 @@ app.get('/api/certs', (req, res) => {
   const store = readStore();
   const rows = CERT_CATALOG.map(entry => certCatalogRow(store, entry));
   res.json({ certs: rows, workbookSource: 'Worker Summary Sheet 2026.xlsx', note: 'Certification catalog built from the worker summary sheet columns plus portal aliases.' });
+});
+
+
+function buildOfficeDigestText(store) {
+  const alerts = computeAlerts(store);
+  const lines = [
+    'JAGD Cert Portal Daily Office Digest',
+    '',
+    ...(alerts.length ? alerts.map(item => `- ${item.title}: ${item.detail}`) : ['- No active alerts right now.'])
+  ];
+  return lines.join('\n');
+}
+
+async function sendTestDigestEmail(store) {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.ALERTS_FROM || user;
+  const to = process.env.ALERTS_TO || user;
+
+  if (!host || !user || !pass || !from || !to) {
+    throw new Error('Missing SMTP environment variables.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: false,
+    auth: { user, pass },
+    tls: { minVersion: 'TLSv1.2' }
+  });
+
+  const subject = `JAGD Test Digest — ${new Date().toLocaleString()}`;
+  const text = buildOfficeDigestText(store);
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject,
+    text
+  });
+
+  return { to, from, subject };
+}
+
+app.post('/api/send-test-digest', async (req, res) => {
+  try {
+    const store = readStore();
+    const info = await sendTestDigestEmail(store);
+    store.auditLog = store.auditLog || [];
+    store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Sent test digest', detail: `${info.to}` });
+    writeStore(store);
+    res.json({ ok: true, message: `Test digest sent to ${info.to}`, ...info });
+  } catch (error) {
+    console.error('Test digest send failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to send test digest' });
+  }
 });
 
 app.get('/api/admin', (req, res) => {

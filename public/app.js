@@ -665,6 +665,10 @@ function adminView() {
           <div class="tag"><strong>Employee Email Alerts:</strong> Hold for Phase 2</div>
         </div>
         <div class="small muted">This section is preview-only for now so we can review the email format safely before turning on real sending.</div>
+        <div class="section button-row">
+          <button class="btn dark" id="sendTestDigestBtn">Send Test Digest</button>
+          <div id="sendTestDigestStatus" class="small muted"></div>
+        </div>
       </div>
       <div class="card">
         <h2>Office Digest Preview</h2>
@@ -808,6 +812,20 @@ function bindEvents() {
     state.user = null;
     render();
   });
+
+  document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('sendTestDigestStatus');
+    if (status) status.textContent = 'Sending...';
+    try {
+      const result = await api('/api/send-test-digest', { method: 'POST' });
+      if (status) status.textContent = result.message || 'Test digest sent.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to send test digest.';
+    }
+  });
+
 
   document.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', async () => {
     state.view = btn.dataset.nav;

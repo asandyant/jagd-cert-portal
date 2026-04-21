@@ -70,8 +70,7 @@
         "state": "NY",
         "expires": "2030-06-08",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 2,
@@ -123,8 +122,7 @@
         "state": "OH",
         "expires": "2029-02-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 3,
@@ -170,8 +168,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 4,
@@ -197,8 +194,7 @@
         "state": "OH",
         "expires": "2027-12-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 5,
@@ -224,8 +220,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 6,
@@ -263,8 +258,7 @@
         "state": "MD",
         "expires": "2032-01-05",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 7,
@@ -302,8 +296,7 @@
         "state": "OH",
         "expires": "2026-09-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 8,
@@ -329,8 +322,7 @@
         "state": "MI",
         "expires": "2029-05-02",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 9,
@@ -425,8 +417,7 @@
         "state": "NJ",
         "expires": "2029-02-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 10,
@@ -520,8 +511,7 @@
         "state": "NJ",
         "expires": "2028-03-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 11,
@@ -567,8 +557,7 @@
         "state": "MD",
         "expires": "2033-10-14",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 12,
@@ -620,8 +609,7 @@
         "state": "NY",
         "expires": "2027-09-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 13,
@@ -647,8 +635,7 @@
         "state": "NY",
         "expires": "2031-06-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 14,
@@ -743,8 +730,7 @@
         "state": "NJ",
         "expires": "2029-10-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 15,
@@ -770,8 +756,7 @@
         "state": "MI",
         "expires": "2027-07-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 16,
@@ -875,8 +860,7 @@
         "state": "NJ",
         "expires": "2028-11-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 17,
@@ -954,8 +938,7 @@
         "state": "NY",
         "expires": "2027-02-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 18,
@@ -987,8 +970,7 @@
         "state": "OH",
         "expires": "2031-03-19",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 19,
@@ -1014,8 +996,7 @@
         "state": "OH",
         "expires": "2028-10-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 20,
@@ -1097,8 +1078,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 21,
@@ -1124,8 +1104,7 @@
         "state": "MD",
         "expires": "2029-12-19",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 22,
@@ -1189,8 +1168,7 @@
         "state": "VA",
         "expires": "2027-02-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 23,
@@ -1260,8 +1238,7 @@
         "state": "NY",
         "expires": "2029-02-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 24,
@@ -1349,8 +1326,7 @@
         "state": "NJ",
         "expires": "2026-10-15",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 25,
@@ -1376,8 +1352,7 @@
         "state": "NY",
         "expires": "2028-04-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 26,
@@ -1431,8 +1406,7 @@
         "state": "NJ",
         "expires": "2026-08-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 27,
@@ -1470,8 +1444,7 @@
         "state": "LA",
         "expires": "2030-01-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 28,
@@ -1497,8 +1470,7 @@
         "state": "LA",
         "expires": "2029-05-02",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 29,
@@ -1524,8 +1496,7 @@
         "state": "MD",
         "expires": "2032-08-19",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 30,
@@ -1565,8 +1536,7 @@
         "state": "NY",
         "expires": "2028-08-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 31,
@@ -1646,8 +1616,7 @@
         "state": "NJ",
         "expires": "2026-06-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 32,
@@ -1693,8 +1662,7 @@
         "state": "MD",
         "expires": "2030-09-12",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 33,
@@ -1720,8 +1688,7 @@
         "state": "NY",
         "expires": "2032-03-23",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 34,
@@ -1777,8 +1744,7 @@
         "state": "NJ",
         "expires": "2025-11-16",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 35,
@@ -1804,8 +1770,7 @@
         "state": "MI",
         "expires": "2029-08-31",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 36,
@@ -1845,8 +1810,7 @@
         "state": "NJ",
         "expires": "2029-08-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 37,
@@ -1872,8 +1836,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 38,
@@ -1917,8 +1880,7 @@
         "state": "NJ",
         "expires": "2029-01-03",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 39,
@@ -2040,8 +2002,7 @@
         "state": "PA",
         "expires": "2026-01-31",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 40,
@@ -2091,8 +2052,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 41,
@@ -2168,8 +2128,7 @@
         "state": "NJ",
         "expires": "2028-03-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 42,
@@ -2225,8 +2184,7 @@
         "state": "NJ",
         "expires": "2028-02-18",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 43,
@@ -2260,8 +2218,7 @@
         "state": "NJ",
         "expires": "2027-03-12",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 44,
@@ -2313,8 +2270,7 @@
         "state": "NJ",
         "expires": "2027-01-02",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 45,
@@ -2358,8 +2314,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 46,
@@ -2419,8 +2374,7 @@
         "state": "CT",
         "expires": "2028-05-23",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 47,
@@ -2446,8 +2400,7 @@
         "state": "NY",
         "expires": "2030-01-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 48,
@@ -2473,8 +2426,7 @@
         "state": "CT",
         "expires": "-",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 49,
@@ -2552,8 +2504,7 @@
         "state": "NJ",
         "expires": "2027-01-29",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 50,
@@ -2631,8 +2582,7 @@
         "state": "NJ",
         "expires": "2029-01-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 51,
@@ -2658,8 +2608,7 @@
         "state": "OH",
         "expires": "2029-03-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 52,
@@ -2724,8 +2673,7 @@
         "state": "OH",
         "expires": "2028-10-14",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 53,
@@ -2751,8 +2699,7 @@
         "state": "OH",
         "expires": "2032-11-03",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 54,
@@ -2778,8 +2725,7 @@
         "state": "MI",
         "expires": "2026-03-07",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 55,
@@ -2805,8 +2751,7 @@
         "state": "NV",
         "expires": "2030-01-31",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 56,
@@ -2832,8 +2777,7 @@
         "state": "MI",
         "expires": "2026-01-23",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 57,
@@ -2859,8 +2803,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 58,
@@ -2919,8 +2862,7 @@
         "state": "NJ",
         "expires": "2028-12-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 59,
@@ -2982,8 +2924,7 @@
         "state": "NJ",
         "expires": "2029-03-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 60,
@@ -3009,8 +2950,7 @@
         "state": "CT",
         "expires": "2027-06-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 61,
@@ -3056,8 +2996,7 @@
         "state": "NY",
         "expires": "2032-08-12",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 62,
@@ -3113,8 +3052,7 @@
         "state": "NJ",
         "expires": "2027-09-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 63,
@@ -3191,8 +3129,7 @@
         "state": "NJ",
         "expires": "2027-03-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 64,
@@ -3251,8 +3188,7 @@
         "state": "NY",
         "expires": "2029-01-23",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 65,
@@ -3358,8 +3294,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 66,
@@ -3385,8 +3320,7 @@
         "state": "LA",
         "expires": "2027-08-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 67,
@@ -3508,8 +3442,7 @@
         "state": "OH",
         "expires": "2026-11-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 68,
@@ -3619,8 +3552,7 @@
         "state": "OH",
         "expires": "2030-12-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 69,
@@ -3672,8 +3604,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 70,
@@ -3731,8 +3662,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 71,
@@ -3758,8 +3688,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 72,
@@ -3895,8 +3824,7 @@
         "state": "PA",
         "expires": "2028-08-06",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 73,
@@ -3922,8 +3850,7 @@
         "state": "LA",
         "expires": "2030-12-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 74,
@@ -3961,8 +3888,7 @@
         "state": "NJ",
         "expires": "2030-01-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 75,
@@ -4062,8 +3988,7 @@
         "state": "NJ",
         "expires": "2025-10-13",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 76,
@@ -4171,8 +4096,7 @@
         "state": "NJ",
         "expires": "2029-11-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 77,
@@ -4228,8 +4152,7 @@
         "state": "NJ",
         "expires": "2028-11-29",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 78,
@@ -4255,8 +4178,7 @@
         "state": "CT",
         "expires": "2028-06-05",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 79,
@@ -4282,8 +4204,7 @@
         "state": "OH",
         "expires": "2025-10-25",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 80,
@@ -4309,8 +4230,7 @@
         "state": "OH",
         "expires": "2026-10-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 81,
@@ -4360,8 +4280,7 @@
         "state": "OH",
         "expires": "2025-08-01",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 82,
@@ -4387,8 +4306,7 @@
         "state": "OH",
         "expires": "2026-09-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 83,
@@ -4464,8 +4382,7 @@
         "state": "NJ",
         "expires": "2027-01-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 84,
@@ -4521,8 +4438,7 @@
         "state": "NY",
         "expires": "2033-04-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 85,
@@ -4548,8 +4464,7 @@
         "state": "MI",
         "expires": "2027-01-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 86,
@@ -4575,8 +4490,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 87,
@@ -4617,8 +4531,7 @@
         "state": "NJ",
         "expires": "2030-03-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 88,
@@ -4718,8 +4631,7 @@
         "state": "NJ",
         "expires": "-",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 89,
@@ -4793,8 +4705,7 @@
         "state": "OH",
         "expires": "2030-09-26",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 90,
@@ -4820,8 +4731,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 91,
@@ -4885,8 +4795,7 @@
         "state": "OH",
         "expires": "2030-01-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 92,
@@ -4930,8 +4839,7 @@
         "state": "FL",
         "expires": "2028-05-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 93,
@@ -4957,8 +4865,7 @@
         "state": "NY",
         "expires": "2028-10-06",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 94,
@@ -4984,8 +4891,7 @@
         "state": "CT",
         "expires": "2032-11-30",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 95,
@@ -5011,8 +4917,7 @@
         "state": "FL",
         "expires": "2026-03-09",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 96,
@@ -5038,8 +4943,7 @@
         "state": "MD",
         "expires": "2026-04-24",
         "status": "Expiring Soon"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 97,
@@ -5065,8 +4969,7 @@
         "state": "VA",
         "expires": "2026-06-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 98,
@@ -5092,8 +4995,7 @@
         "state": "OH",
         "expires": "2031-04-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 99,
@@ -5187,8 +5089,7 @@
         "state": "NY",
         "expires": "2029-11-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 100,
@@ -5214,8 +5115,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 101,
@@ -5241,8 +5141,7 @@
         "state": "OH",
         "expires": "2029-10-30",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 102,
@@ -5268,8 +5167,7 @@
         "state": "MI",
         "expires": "2026-05-26",
         "status": "Expiring Soon"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 103,
@@ -5364,8 +5262,7 @@
         "state": "NY",
         "expires": "2030-08-28",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 104,
@@ -5415,8 +5312,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 105,
@@ -5442,8 +5338,7 @@
         "state": "MD",
         "expires": "2025-09-08",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 106,
@@ -5592,8 +5487,7 @@
         "state": "NJ",
         "expires": "2030-01-08",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 107,
@@ -5655,8 +5549,7 @@
         "state": "CT",
         "expires": "2029-11-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 108,
@@ -5682,8 +5575,7 @@
         "state": "No Drivers License",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 109,
@@ -5709,8 +5601,7 @@
         "state": "NJ",
         "expires": "2027-01-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 110,
@@ -5736,8 +5627,7 @@
         "state": "FL ID Only",
         "expires": "-",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 111,
@@ -5781,8 +5671,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 112,
@@ -5808,8 +5697,7 @@
         "state": "MI",
         "expires": "2026-02-08",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 113,
@@ -5835,8 +5723,7 @@
         "state": "FL",
         "expires": "2031-02-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 114,
@@ -5868,8 +5755,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 115,
@@ -5895,8 +5781,7 @@
         "state": "VA",
         "expires": "2027-09-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 116,
@@ -5922,8 +5807,7 @@
         "state": "NY",
         "expires": "2031-09-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 117,
@@ -6023,8 +5907,7 @@
         "state": "NY",
         "expires": "2029-05-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 118,
@@ -6070,8 +5953,7 @@
         "state": "MD",
         "expires": "2032-06-28",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 119,
@@ -6135,8 +6017,7 @@
         "state": "NY",
         "expires": "2027-12-14",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 120,
@@ -6162,8 +6043,7 @@
         "state": "CA",
         "expires": "2027-04-15",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 121,
@@ -6252,8 +6132,7 @@
         "state": "NJ",
         "expires": "2029-03-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 122,
@@ -6279,8 +6158,7 @@
         "state": "MI",
         "expires": "2027-11-15",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 123,
@@ -6339,8 +6217,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 124,
@@ -6404,8 +6281,7 @@
         "state": "NY",
         "expires": "2032-02-26",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 125,
@@ -6443,8 +6319,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 126,
@@ -6503,8 +6378,7 @@
         "state": "NY",
         "expires": "2031-11-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 127,
@@ -6550,8 +6424,7 @@
         "state": "NJ",
         "expires": "2029-05-21",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 128,
@@ -6676,8 +6549,7 @@
         "state": "NY",
         "expires": "2027-07-30",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 129,
@@ -6703,8 +6575,7 @@
         "state": "CT",
         "expires": "2034-01-18",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 130,
@@ -6763,8 +6634,7 @@
         "state": "NJ",
         "expires": "2028-03-14",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 131,
@@ -6790,8 +6660,7 @@
         "state": "MI",
         "expires": "2028-07-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 132,
@@ -6829,8 +6698,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 133,
@@ -6856,8 +6724,7 @@
         "state": "NY",
         "expires": "2029-07-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 134,
@@ -6945,8 +6812,7 @@
         "state": "NY",
         "expires": "2031-11-29",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 135,
@@ -7030,8 +6896,7 @@
         "state": "FL",
         "expires": "2033-09-26",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 136,
@@ -7057,8 +6922,7 @@
         "state": "MI",
         "expires": "2030-02-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 137,
@@ -7084,8 +6948,7 @@
         "state": "NY",
         "expires": "2030-06-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 138,
@@ -7123,8 +6986,7 @@
         "state": "PA",
         "expires": "2027-04-30",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 139,
@@ -7162,8 +7024,7 @@
         "state": "No DL",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 140,
@@ -7225,8 +7086,7 @@
         "state": "OH",
         "expires": "2033-07-02",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 141,
@@ -7288,8 +7148,7 @@
         "state": "OH",
         "expires": "2029-04-14",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 142,
@@ -7377,8 +7236,7 @@
         "state": "NJ",
         "expires": "2028-06-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 143,
@@ -7428,8 +7286,7 @@
         "state": "NJ",
         "expires": "2026-08-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 144,
@@ -7473,8 +7330,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 145,
@@ -7500,8 +7356,7 @@
         "state": "MI",
         "expires": "2026-12-29",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 146,
@@ -7619,8 +7474,7 @@
         "state": "OH",
         "expires": "2029-10-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 147,
@@ -7646,8 +7500,7 @@
         "state": "NY",
         "expires": "2029-09-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 148,
@@ -7687,8 +7540,7 @@
         "state": "NY",
         "expires": "2028-03-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 149,
@@ -7714,8 +7566,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 150,
@@ -7741,8 +7592,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 151,
@@ -7798,8 +7648,7 @@
         "state": "NY",
         "expires": "2027-05-18",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 152,
@@ -7831,8 +7680,7 @@
         "state": "NY",
         "expires": "2029-07-01",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 153,
@@ -7858,8 +7706,7 @@
         "state": "OH",
         "expires": "2026-07-26",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 154,
@@ -7923,8 +7770,7 @@
         "state": "NY",
         "expires": "2027-01-15",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 155,
@@ -7995,8 +7841,7 @@
         "state": "NY",
         "expires": "2033-05-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 156,
@@ -8022,8 +7867,7 @@
         "state": "FL",
         "expires": "2033-12-03",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 157,
@@ -8069,8 +7913,7 @@
         "state": "IL",
         "expires": "2029-09-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 158,
@@ -8110,8 +7953,7 @@
         "state": "FL",
         "expires": "2032-03-01",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 159,
@@ -8149,8 +7991,7 @@
         "state": "No DL",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 160,
@@ -8176,8 +8017,7 @@
         "state": "MI",
         "expires": "2027-01-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 161,
@@ -8203,8 +8043,7 @@
         "state": "MI",
         "expires": "2029-12-24",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 162,
@@ -8230,8 +8069,7 @@
         "state": "NY",
         "expires": "2026-12-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 163,
@@ -8271,8 +8109,7 @@
         "state": "NY",
         "expires": "2027-07-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 164,
@@ -8304,8 +8141,7 @@
         "state": "MI",
         "expires": "2023-05-17",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 165,
@@ -8385,8 +8221,7 @@
         "state": "OH",
         "expires": "2022-07-04",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 166,
@@ -8470,8 +8305,7 @@
         "state": "NJ",
         "expires": "2028-07-01",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 167,
@@ -8539,8 +8373,7 @@
         "state": "NJ",
         "expires": "2027-06-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 168,
@@ -8616,8 +8449,7 @@
         "state": "NJ",
         "expires": "2026-07-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 169,
@@ -8636,8 +8468,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 170,
@@ -8762,8 +8593,7 @@
         "state": "NY",
         "expires": "2031-06-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 171,
@@ -8789,8 +8619,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 172,
@@ -8816,8 +8645,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 173,
@@ -8843,8 +8671,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 174,
@@ -8870,8 +8697,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 175,
@@ -8897,8 +8723,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 176,
@@ -8962,8 +8787,7 @@
         "state": "NJ",
         "expires": "2027-08-10",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 177,
@@ -9021,8 +8845,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 178,
@@ -9116,8 +8939,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 179,
@@ -9143,8 +8965,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 180,
@@ -9188,8 +9009,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 181,
@@ -9215,8 +9035,7 @@
         "state": "LA",
         "expires": "2030-01-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 182,
@@ -9278,8 +9097,7 @@
         "state": "NJ",
         "expires": "2027-04-01",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 183,
@@ -9305,8 +9123,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 184,
@@ -9332,8 +9149,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 185,
@@ -9397,8 +9213,7 @@
         "state": "NJ",
         "expires": "2027-05-22",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 186,
@@ -9469,8 +9284,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 187,
@@ -9529,8 +9343,7 @@
         "state": "MD",
         "expires": "2031-12-25",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 188,
@@ -9568,8 +9381,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 189,
@@ -9652,8 +9464,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 190,
@@ -9724,8 +9535,7 @@
         "state": "NY",
         "expires": "2027-12-31",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 191,
@@ -9751,8 +9561,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 192,
@@ -9798,8 +9607,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 193,
@@ -9863,8 +9671,7 @@
         "state": "NJ",
         "expires": "2025-11-04",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 194,
@@ -9883,8 +9690,7 @@
         "state": "OH",
         "expires": "2032-06-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 195,
@@ -9928,8 +9734,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 196,
@@ -9987,8 +9792,7 @@
         "state": "NJ",
         "expires": "2027-09-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 197,
@@ -10014,8 +9818,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 198,
@@ -10080,8 +9883,7 @@
         "state": "PA",
         "expires": "2026-12-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 199,
@@ -10140,8 +9942,7 @@
         "state": "LA",
         "expires": "2030-09-11",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 200,
@@ -10167,8 +9968,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 201,
@@ -10226,8 +10026,7 @@
         "state": "MD",
         "expires": "2030-12-31",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 202,
@@ -10253,8 +10052,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 203,
@@ -10312,8 +10110,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 204,
@@ -10369,8 +10166,7 @@
         "state": "PA",
         "expires": "2026-05-01",
         "status": "Expiring Soon"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 205,
@@ -10411,8 +10207,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 206,
@@ -10490,8 +10285,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 207,
@@ -10537,8 +10331,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 208,
@@ -10570,8 +10363,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 209,
@@ -10597,8 +10389,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 210,
@@ -10669,8 +10460,7 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 211,
@@ -10696,8 +10486,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 212,
@@ -10753,8 +10542,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 213,
@@ -10807,8 +10595,7 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 214,
@@ -10834,8 +10621,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 215,
@@ -10900,8 +10686,7 @@
         "state": "NJ",
         "expires": "2028-08-29",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 216,
@@ -10954,8 +10739,7 @@
         "state": "PA",
         "expires": "2026-04-11",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 217,
@@ -11020,8 +10804,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 218,
@@ -11109,8 +10892,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 219,
@@ -11150,8 +10932,7 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 220,
@@ -11177,8 +10958,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 221,
@@ -11204,8 +10984,7 @@
         "state": "MI",
         "expires": "2026-01-02",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 222,
@@ -11269,8 +11048,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 223,
@@ -11302,8 +11080,7 @@
         "state": "NJ",
         "expires": "2026-10-16",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 224,
@@ -11343,8 +11120,7 @@
         "state": "MD",
         "expires": "2021-08-01",
         "status": "Expired"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 225,
@@ -11396,8 +11172,7 @@
         "state": "NJ",
         "expires": "2027-11-13",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 226,
@@ -11423,8 +11198,7 @@
         "state": "NJ",
         "expires": "2027-05-09",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 227,
@@ -11495,8 +11269,7 @@
         "state": "PA",
         "expires": "2028-03-03",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 228,
@@ -11522,8 +11295,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 229,
@@ -11549,8 +11321,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 230,
@@ -11584,8 +11355,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 231,
@@ -11653,8 +11423,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 232,
@@ -11704,8 +11473,7 @@
         "state": "NY",
         "expires": "-",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 233,
@@ -11749,8 +11517,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 234,
@@ -11802,8 +11569,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 235,
@@ -11849,8 +11615,7 @@
         "state": "NJ",
         "expires": "2028-11-27",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 236,
@@ -11933,8 +11698,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 237,
@@ -12017,8 +11781,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 238,
@@ -12037,8 +11800,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 239,
@@ -12070,8 +11832,7 @@
         "state": "NJ Probationary",
         "expires": "2027-11-15",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 240,
@@ -12109,8 +11870,7 @@
         "state": "PA",
         "expires": "2029-06-17",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 241,
@@ -12142,8 +11902,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 242,
@@ -12229,8 +11988,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 243,
@@ -12262,8 +12020,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 244,
@@ -12289,8 +12046,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 245,
@@ -12328,8 +12084,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 246,
@@ -12400,8 +12155,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 247,
@@ -12427,8 +12181,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 248,
@@ -12454,8 +12207,7 @@
         "state": "IL",
         "expires": "2029-09-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 249,
@@ -12493,8 +12245,7 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      },
-      "employmentStatus": "Active"
+      }
     },
     {
       "id": 250,
@@ -12538,8 +12289,7 @@
         "state": "PA",
         "expires": "2026-08-20",
         "status": "Current"
-      },
-      "employmentStatus": "Active"
+      }
     }
   ],
   "jobs": [
