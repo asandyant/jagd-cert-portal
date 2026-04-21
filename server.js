@@ -610,14 +610,17 @@ function startDigestScheduler() {
   }
 }
 
+function buildOfficeDigest(store) {
+  const recipients = process.env.ALERTS_TO || process.env.SMTP_USER || '';
+  return {
+    subject: `JAGD Cert Portal Daily Digest - ${currentDateLabel()}`,
+    body: formatDigestBody(store),
+    recipients
+  };
+}
+
 function buildOfficeDigestText(store) {
-  const alerts = computeAlerts(store);
-  const lines = [
-    'JAGD Cert Portal Daily Office Digest',
-    '',
-    ...(alerts.length ? alerts.map(item => `- ${item.title}: ${item.detail}`) : ['- No active alerts right now.'])
-  ];
-  return lines.join('\n');
+  return buildOfficeDigest(store).body;
 }
 
 async function sendTestDigestEmail(store) {
