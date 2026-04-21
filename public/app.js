@@ -20,6 +20,7 @@ const state = {
   selectedCertScope: 'active-good',
   alerts: [],
   selectedAlertKey: null,
+  pendingScrollTarget: null,
   modals: { worker: false, job: false, jobEdit: false }
 };
 
@@ -145,8 +146,7 @@ function layout(content) {
       <div class="hero">
         <div class="hero-top">
           <div>
-            <div class="pill">Launchable Demo Build</div>
-            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
+                        <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
             <div class="sub" style="color:#cbd5e1;">Private internal portal for worker certifications, bloodwork tracking, uploads, reports, and job readiness.</div>
           </div>
           <div class="right-note">
@@ -174,7 +174,7 @@ function layout(content) {
           <div class="stat"><div class="label">Jobs Needing Review</div><div class="value">${counts.jobsNeedingReview}</div></div>
         </div>
       </div>
-      <div class="section">${content}</div>
+      <div class="section" id="view-start">${content}</div>
     </div>
     ${renderWorkerModal()}
     ${renderJobModal()}
@@ -189,7 +189,7 @@ function loginView() {
       <div class="hero">
         <div class="hero-top">
           <div>
-            <div class="pill">Owner Demo Preview</div>
+            
             <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
             <div class="sub" style="color:#cbd5e1;">Private internal portal for certifications, bloodwork, worker readiness, uploads, reports, and job qualification tracking.</div>
           </div>
@@ -345,7 +345,7 @@ function dashboardView() {
       ` : ''}
     </div>
 
-    <div class="card section">
+    <div class="card section" id="job-workers-section">
       <div class="card-header"><div><h2>${state.selectedBucket === 'qualified' ? 'Qualified' : state.selectedBucket === 'expiring' ? 'Expiring Soon' : 'Not Qualified'} Workers</h2><div class="sub">Click a worker to open the full profile.</div></div></div>
       <div class="section">${workerTable(selectedItems)}</div>
     </div>
@@ -501,7 +501,7 @@ function certsView() {
       </div>
     </div>
     ${selectedCert ? `
-      <div class="card section">
+      <div class="card section" id="cert-worker-list">
         <div class="card-header">
           <div><h2>${selectedCert.name}</h2><div class="sub">Click a worker to open the full profile.</div></div>
           <div class="button-row cert-scope-grid">
@@ -551,7 +551,7 @@ function alertsView() {
           `).join('') : '<div class="muted">No active alerts right now.</div>'}
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="alert-detail-section">
         <div class="card-header"><div><h2>${selectedAlert ? selectedAlert.title : 'Alert Detail'}</h2><div class="sub">${selectedAlert ? 'Review the exact records behind this alert.' : 'Select an alert to view the list.'}</div></div></div>
         <div class="section">${selectedAlert ? alertItemsTable(selectedAlert) : '<div class="muted">No alert selected.</div>'}</div>
         <div class="section"><h3 style="margin:0 0 10px;">Reminder Rules</h3>${(state.admin?.reminderRules || []).map(r=>`<div class="tag"><strong>${r.label}</strong>: ${r.value}</div>`).join('')}</div>
@@ -752,6 +752,7 @@ function render() {
     app.innerHTML = view;
   }
   bindEvents();
+  requestAnimationFrame(() => scrollToPendingTarget());
 }
 
 async function refreshData() {
@@ -780,6 +781,17 @@ async function refreshData() {
     const idx = state.workers.findIndex(w => w.id === worker.id);
     if (idx >= 0) state.workers[idx] = worker;
   }
+}
+
+
+function scrollToPendingTarget() {
+  const targetId = state.pendingScrollTarget;
+  if (!targetId) return;
+  const el = document.getElementById(targetId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  state.pendingScrollTarget = null;
 }
 
 function bindEvents() {
@@ -829,6 +841,7 @@ function bindEvents() {
 
   document.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', async () => {
     state.view = btn.dataset.nav;
+    state.pendingScrollTarget = 'view-start';
     if (state.view === 'certs' && !state.selectedCertName && state.certs[0]) {
       state.selectedCertName = state.certs[0].name;
     }
@@ -843,6 +856,7 @@ function bindEvents() {
   document.querySelectorAll('[data-alert-open]').forEach(btn => btn.addEventListener('click', () => {
     state.selectedAlertKey = btn.dataset.alertOpen;
     state.view = 'alerts';
+    state.pendingScrollTarget = 'alert-detail-section';
     render();
   }));
 
@@ -857,18 +871,21 @@ function bindEvents() {
 
   document.querySelectorAll('[data-bucket]').forEach(el => el.addEventListener('click', () => {
     state.selectedBucket = el.dataset.bucket;
+    state.pendingScrollTarget = 'job-workers-section';
     render();
   }));
 
   document.querySelectorAll('[data-cert-name]').forEach(el => el.addEventListener('click', () => {
     state.selectedCertName = el.dataset.certName;
     state.selectedCertScope = el.dataset.certScope || 'active-good';
+    state.pendingScrollTarget = 'cert-worker-list';
     render();
   }));
 
   document.querySelectorAll('[data-open-worker]').forEach(el => el.addEventListener('click', async () => {
     state.selectedWorkerId = Number(el.dataset.openWorker);
     if (state.view !== 'employees') state.view = 'employees';
+    state.pendingScrollTarget = 'view-start';
     const worker = await api('/api/workers/' + state.selectedWorkerId);
     const idx = state.workers.findIndex(w => w.id === worker.id);
     if (idx >= 0) state.workers[idx] = worker;

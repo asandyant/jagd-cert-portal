@@ -6,8 +6,12 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const STORE_PATH = path.join(__dirname, 'data', 'store.json');
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(__dirname, 'storage');
+const DATA_DIR = path.join(STORAGE_ROOT, 'data');
+const STORE_PATH = path.join(DATA_DIR, 'store.json');
+const UPLOADS_DIR = path.join(STORAGE_ROOT, 'uploads');
+const LEGACY_STORE_PATH = path.join(__dirname, 'data', 'store.json');
+const LEGACY_UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 const TODAY = new Date('2026-04-17T00:00:00');
 
 const CERT_CATALOG = [
@@ -88,10 +92,32 @@ function certCatalogRow(store, entry) {
 
 
 app.use(express.json({ limit: '2mb' }));
+app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+
+function ensureStorageSetup() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+  if (!fs.existsSync(STORE_PATH) && fs.existsSync(LEGACY_STORE_PATH)) {
+    fs.copyFileSync(LEGACY_STORE_PATH, STORE_PATH);
+  }
+
+  if (fs.existsSync(LEGACY_UPLOADS_DIR)) {
+    for (const file of fs.readdirSync(LEGACY_UPLOADS_DIR)) {
+      const oldPath = path.join(LEGACY_UPLOADS_DIR, file);
+      const newPath = path.join(UPLOADS_DIR, file);
+      if (fs.statSync(oldPath).isFile() && !fs.existsSync(newPath)) {
+        fs.copyFileSync(oldPath, newPath);
+      }
+    }
+  }
+}
+
 function ensureUploadsDir() {
+  ensureStorageSetup();
   if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
@@ -131,6 +157,7 @@ function recomputeWorkerSummary(worker) {
 }
 
 function readStore() {
+  ensureStorageSetup();
   const store = JSON.parse(fs.readFileSync(STORE_PATH, 'utf8'));
   if (store.workers) {
     let changed = false;
@@ -146,6 +173,7 @@ function readStore() {
   return store;
 }
 function writeStore(store) {
+  ensureStorageSetup();
   fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2));
 }
 function daysBetween(a, b) {
