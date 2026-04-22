@@ -1118,8 +1118,7 @@ function bindEvents() {
     if (!confirmed) return;
     try {
       await api(`/api/uploads/${uploadId}?deleteFile=1`, { method: 'DELETE' });
-      await loadUploads();
-      if (state.selectedWorkerId) await loadWorkers();
+      await refreshData();
       render();
       window.alert('Upload record deleted.');
     } catch (err) {
@@ -1138,8 +1137,7 @@ function bindEvents() {
     if (!confirmed) return;
     try {
       await api(`/api/workers/${workerId}/certifications`, { method: 'DELETE', body: { certName, deleteFile: true } });
-      await loadWorkers();
-      await loadUploads();
+      await refreshData();
       render();
       window.alert('Certification deleted from worker profile.');
     } catch (err) {
