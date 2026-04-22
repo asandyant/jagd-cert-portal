@@ -691,7 +691,7 @@ function bloodworkView() {
 
 function alertsView() {
   const alerts = liveAlerts();
-  const selectedAlert = alerts.find(a => a.key === state.selectedAlertKey) || alerts[0] || null;
+  const selectedAlert = alerts.find(a => a.key === state.selectedAlertKey) || null;
   const selectedCount = selectedAlert ? (selectedAlert.count || (selectedAlert.items || []).length || 0) : 0;
   return layout(`
     <div class="grid grid-2" id="alerts-top">
@@ -718,7 +718,7 @@ function alertsView() {
                 <div class="tag dark">${item.count || (item.items || []).length || 0} item(s)</div>
               </div>
               <div class="button-row" style="margin-top:12px;">
-                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">View List</button>
+                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">${selectedAlert && selectedAlert.key===item.key ? 'Open List' : 'View List'}</button>
                 ${selectedAlert && selectedAlert.key===item.key ? `<span class="tag">Selected</span>` : ''}
               </div>
             </div>
@@ -729,7 +729,7 @@ function alertsView() {
         <div class="card-header">
           <div>
             <h2>${selectedAlert ? selectedAlert.title : 'Alert Detail'}</h2>
-            <div class="sub">${selectedAlert ? 'Review the exact records behind this alert and use the actions below to move through the list.' : 'Select an alert to view the list.'}</div>
+            <div class="sub">${selectedAlert ? 'Review the exact records behind this alert and use the actions below to move through the list.' : 'Click View List on the left to open the records for that alert.'}</div>
           </div>
           <button class="btn light" id="alertBackToTopBtn">Back to Top</button>
         </div>
@@ -982,7 +982,7 @@ async function refreshData() {
 
   if (!state.selectedWorkerId && state.workers[0]) state.selectedWorkerId = state.workers[0].id;
   if (!state.selectedJobId && state.jobs[0]) state.selectedJobId = state.jobs[0].id;
-  if (!state.selectedAlertKey && state.alerts[0]) state.selectedAlertKey = state.alerts[0].key;
+  if (state.selectedAlertKey && !state.alerts.find(a => a.key === state.selectedAlertKey)) state.selectedAlertKey = null;
   if (state.selectedJobId) {
     const selected = await api('/api/jobs/' + state.selectedJobId);
     const idx = state.jobs.findIndex(j => j.id === selected.id);
