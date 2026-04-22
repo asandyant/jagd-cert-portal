@@ -107,8 +107,33 @@ function buildFallbackAlerts() {
   return alerts;
 }
 
+function normalizeAlertFeed(alerts) {
+  const fallback = buildFallbackAlerts();
+  const byTitle = new Map(fallback.map(item => [String(item.title || '').toLowerCase(), item]));
+  return (alerts || []).map((alert, index) => {
+    const title = String(alert.title || '').trim();
+    const match = byTitle.get(title.toLowerCase());
+    if (match) {
+      return {
+        ...match,
+        ...alert,
+        key: alert.key || match.key || `alert-${index}`,
+        scope: alert.scope || match.scope,
+        items: Array.isArray(alert.items) && alert.items.length ? alert.items : (match.items || [])
+      };
+    }
+    return {
+      ...alert,
+      key: alert.key || `alert-${index}`,
+      scope: alert.scope || 'records',
+      items: Array.isArray(alert.items) ? alert.items : []
+    };
+  });
+}
+
 function liveAlerts() {
-  return (state.alerts && state.alerts.length) ? state.alerts : buildFallbackAlerts();
+  const normalized = normalizeAlertFeed(state.alerts || []);
+  return normalized.length ? normalized : buildFallbackAlerts();
 }
 
 function layout(content) {
@@ -973,7 +998,7 @@ async function refreshData() {
   state.jobs = await api('/api/jobs?search=' + encodeURIComponent(state.jobSearch));
   state.bloodwork = await api('/api/bloodwork');
   state.uploads = await api('/api/uploads');
-  state.alerts = await api('/api/alerts');
+  state.alerts = normalizeAlertFeed(await api('/api/alerts'));
   state.admin = await api('/api/admin');
   const certPayload = await api('/api/certs');
   state.certs = certPayload.certs || [];
@@ -981,7 +1006,7 @@ async function refreshData() {
 
   if (!state.selectedWorkerId && state.workers[0]) state.selectedWorkerId = state.workers[0].id;
   if (!state.selectedJobId && state.jobs[0]) state.selectedJobId = state.jobs[0].id;
-  if (state.selectedAlertKey && !state.alerts.find(a => a.key === state.selectedAlertKey)) state.selectedAlertKey = null;
+  if (state.selectedAlertKey && !normalizeAlertFeed(state.alerts).find(a => a.key === state.selectedAlertKey)) state.selectedAlertKey = null;
   if (state.selectedJobId) {
     const selected = await api('/api/jobs/' + state.selectedJobId);
     const idx = state.jobs.findIndex(j => j.id === selected.id);
