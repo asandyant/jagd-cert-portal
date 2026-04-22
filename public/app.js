@@ -21,6 +21,7 @@ const state = {
   alerts: [],
   selectedAlertKey: null,
   pendingScrollTarget: null,
+  workerPortal: null,
   modals: { worker: false, job: false, jobEdit: false }
 };
 
@@ -201,7 +202,7 @@ function loginView() {
       </div>
       <div class="grid grid-2 section">
         <div class="card">
-          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use the test logins below to open the portal.</div></div></div>
+          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use office/admin test logins below to open the portal. Worker logins stay tied to each worker profile.</div></div></div>
           <div class="section grid grid-2">
             <div><div class="small muted">Username</div><input id="loginUsername" value="admin" /></div>
             <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="admin123" /></div>
@@ -388,7 +389,7 @@ function selectedWorkerSection() {
   const worker = state.workers.find(w => w.id === state.selectedWorkerId) || state.workers[0];
   if (!worker) return '';
   return `
-    <div class="grid grid-2 section">
+    <div class="grid grid-2 section" id="selected-worker-profile">
       <div class="card">
         <div class="card-header"><div><h2>Worker Profile</h2><div class="sub">${worker.name}</div></div><div>${badge(worker.status)}</div></div>
         <div class="grid grid-3 section">
@@ -407,6 +408,8 @@ function selectedWorkerSection() {
           <div class="filter-row" style="margin-top:10px;">
             ${['Active','Inactive'].map(status => `<button class="${(worker.employmentStatus || 'Active')===status ? 'active' : ''}" data-set-employment="${worker.id}|${status}">${status}</button>`).join('')}
           </div>
+          <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
+          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
         </div>
         <div class="section table-wrap">
           <table>
@@ -425,6 +428,85 @@ function selectedWorkerSection() {
         <div class="card">
           <h2>Driver License</h2>
           <div class="section small">Class: <strong>${worker.driverLicense.class}</strong><br/>State: <strong>${worker.driverLicense.state || '-'}</strong><br/>Number: <strong>${worker.driverLicense.number}</strong><br/>Expires: <strong>${worker.driverLicense.expires}</strong><br/>Status: ${badge(worker.driverLicense.status)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+
+function workerPortalView() {
+  const payload = state.workerPortal;
+  const worker = payload?.worker;
+  if (!worker) {
+    return layout(`<div class="card"><h2>Worker Portal</h2><div class="muted">Loading your records...</div></div>`);
+  }
+  return `
+    <div class="container">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Worker Portal</h1>
+            <div class="sub" style="color:#cbd5e1;">View your own certifications, bloodwork, alerts, and uploads.</div>
+          </div>
+          <div class="right-note">
+            <span class="pill">${worker.name}</span>
+            <button class="btn light" id="logoutBtn">Log Out</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header"><div><h2>My Certifications</h2><div class="sub">Your current certification records.</div></div></div>
+            <div class="section table-wrap">
+              <table>
+                <thead><tr><th>Certification</th><th>Status</th><th>Expiration</th><th>Document</th></tr></thead>
+                <tbody>
+                  ${(worker.certifications || []).map(c => `<tr><td>${c.name}</td><td>${badge(c.status)}</td><td>${c.date || '-'}</td><td>${String(c.document || '').startsWith('/uploads/') ? `<a href="${c.document}" target="_blank" class="link">Open File</a>` : (c.document || 'On file')}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><h2>My Bloodwork</h2><div class="sub">Your current bloodwork records.</div></div></div>
+            <div class="section">${(worker.bloodwork || []).length ? worker.bloodwork.map(b => `<div class="tag">${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 section">
+          <div class="card">
+            <div class="card-header"><div><h2>My Alerts</h2><div class="sub">Only your own records show here.</div></div></div>
+            <div class="section">${(payload.alerts || []).length ? payload.alerts.map(a => `<div class="tag"><strong>${a.title}</strong>: ${a.detail}</div>`).join('') : '<div class="muted">No active alerts right now.</div>'}</div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue.</div></div></div>
+            <div class="section grid grid-2">
+              <input id="workerUploadFileName" placeholder="Record name (example: Fit_Test.pdf)" />
+              <input id="workerUploadFilePicker" type="file" accept=".pdf,image/*" />
+              <div>
+                <div class="small muted" style="margin-bottom:6px;">Certification</div>
+                <select id="workerUploadCertName">
+                  <option value="">Select certification</option>
+                  ${((state.certs || [])).map(cert => `<option value="${escapeHtml(cert.name)}">${cert.name}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <div class="small muted" style="margin-bottom:6px;">Expiration Date</div>
+                <input id="workerUploadExpirationDate" type="date" />
+              </div>
+              <input id="workerUploadNotes" placeholder="Notes" />
+            </div>
+            <div class="section button-row">
+              <button class="btn dark" id="workerUploadBtn">Submit Certification Upload</button>
+              <div id="workerUploadStatus" class="small muted"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="card-header"><div><h2>My Uploaded Records</h2><div class="sub">Files you submitted into the review queue.</div></div></div>
+          <div class="section">${(payload.uploads || []).length ? payload.uploads.map(u => `<div class="tag"><strong>${u.file}</strong> · ${u.certName || '-'} · ${u.status}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''}</div>`).join('') : '<div class="muted">No uploads yet.</div>'}</div>
         </div>
       </div>
     </div>`;
@@ -739,6 +821,8 @@ function render() {
   const app = document.getElementById('app');
   if (!state.user) {
     app.innerHTML = loginView();
+  } else if (state.user.role === 'Worker') {
+    app.innerHTML = workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -756,6 +840,23 @@ function render() {
 }
 
 async function refreshData() {
+  if (state.user?.role === 'Worker' && state.user?.workerId) {
+    const payload = await api('/api/worker-portal/' + state.user.workerId);
+    state.workerPortal = payload;
+    state.selectedWorkerId = state.user.workerId;
+    state.workers = [payload.worker];
+    state.jobs = [];
+    state.uploads = payload.uploads || [];
+    state.dashboard = { executiveSummary: [], counts: {} };
+    state.bloodwork = payload.worker?.bloodwork || [];
+    state.alerts = (payload.alerts || []).map((a, i) => ({ ...a, key: `worker-alert-${i}`, items: [] }));
+    state.admin = null;
+    const certPayload = await api('/api/certs');
+    state.certs = certPayload.certs || [];
+    state.certsSource = certPayload.workbookSource || '';
+    return;
+  }
+
   state.dashboard = await api('/api/dashboard');
   const workerQuery = new URLSearchParams({ search: state.employeeSearch, filter: state.employeeFilter });
   state.workers = await api('/api/workers?' + workerQuery.toString());
@@ -839,6 +940,46 @@ function bindEvents() {
   });
 
 
+  document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('workerUploadStatus');
+    if (status) status.textContent = 'Uploading...';
+    try {
+      const pickedFile = document.getElementById('workerUploadFilePicker')?.files?.[0];
+      const certName = document.getElementById('workerUploadCertName').value;
+      const recordName = document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload';
+      if (!certName) throw new Error('Please select a certification.');
+      let fileData = '';
+      if (pickedFile) {
+        fileData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result || '');
+          reader.onerror = () => reject(new Error('File read failed'));
+          reader.readAsDataURL(pickedFile);
+        });
+      }
+      await api('/api/uploads', {
+        method: 'POST',
+        body: {
+          file: recordName,
+          originalFileName: pickedFile?.name || '',
+          fileData,
+          workerId: state.user.workerId,
+          worker: state.workerPortal?.worker?.name || state.user.name,
+          certName,
+          expirationDate: document.getElementById('workerUploadExpirationDate').value,
+          status: 'Needs Review',
+          notes: document.getElementById('workerUploadNotes').value
+        }
+      });
+      if (status) status.textContent = 'Upload submitted.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Upload failed.';
+    }
+  });
+
+
   document.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', async () => {
     state.view = btn.dataset.nav;
     state.pendingScrollTarget = 'view-start';
@@ -885,7 +1026,7 @@ function bindEvents() {
   document.querySelectorAll('[data-open-worker]').forEach(el => el.addEventListener('click', async () => {
     state.selectedWorkerId = Number(el.dataset.openWorker);
     if (state.view !== 'employees') state.view = 'employees';
-    state.pendingScrollTarget = 'view-start';
+    state.pendingScrollTarget = 'selected-worker-profile';
     const worker = await api('/api/workers/' + state.selectedWorkerId);
     const idx = state.workers.findIndex(w => w.id === worker.id);
     if (idx >= 0) state.workers[idx] = worker;

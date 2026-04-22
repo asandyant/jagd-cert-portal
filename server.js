@@ -40,6 +40,45 @@ const CERT_CATALOG = [
   { name: 'BLL / ZPP Current', aliases: ['BLL / ZPP Current'] }
 ];
 
+
+function makeWorkerPortalUsername(worker, used = new Set()) {
+  const first = String(worker.firstName || '').trim().toLowerCase();
+  const last = String(worker.lastName || '').trim().toLowerCase();
+  const full = String(worker.name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+  let base = '';
+  if (first && last) base = `${first[0]}${last}`.replace(/[^a-z0-9]+/g, '');
+  else if (last) base = last.replace(/[^a-z0-9]+/g, '');
+  else base = full || `worker${worker.id}`;
+  let candidate = base || `worker${worker.id}`;
+  let n = 1;
+  while (used.has(candidate)) {
+    candidate = `${base}${n}`;
+    n += 1;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function ensureWorkerPortalAccounts(store) {
+  store.users = store.users || [];
+  const used = new Set((store.users || []).map(u => String(u.username || '').trim().toLowerCase()));
+  let changed = false
+  for (const worker of (store.workers || [])) {
+    if (!worker.portalUsername) {
+      worker.portalUsername = makeWorkerPortalUsername(worker, used);
+      changed = true;
+    } else {
+      used.add(String(worker.portalUsername).trim().toLowerCase());
+    }
+    if (!worker.portalPassword) {
+      worker.portalPassword = 'worker123';
+      changed = true;
+    }
+  }
+  if (changed) writeStore(store);
+  return store;
+}
+
 function certNeedsAttentionFromStatus(status = '') {
   const s = String(status || '').toLowerCase();
   return s.includes('expired') || s.includes('overdue') || s.includes('needs attention') || s.includes('due today') || s.includes('ready for review');
@@ -170,6 +209,7 @@ function readStore() {
     });
     if (changed) writeStore(store);
   }
+  ensureWorkerPortalAccounts(store);
   return store;
 }
 function writeStore(store) {
@@ -323,11 +363,19 @@ app.post('/api/login', (req, res) => {
     password: String(u.password || '').trim()
   }));
 
-  const allUsers = [...storeUsers, ...fallbackUsers];
+  const workerUsers = (store.workers || []).map(w => ({
+    username: String(w.portalUsername || '').trim().toLowerCase(),
+    password: String(w.portalPassword || 'worker123').trim(),
+    role: 'Worker',
+    name: w.name,
+    workerId: w.id
+  })).filter(u => u.username);
+
+  const allUsers = [...storeUsers, ...workerUsers, ...fallbackUsers];
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
-  res.json({ user: { username: user.username, role: user.role, name: user.name } });
+  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null } });
 });
 
 app.get('/api/dashboard', (req, res) => {
@@ -516,7 +564,10 @@ app.get('/api/bloodwork', (req, res) => {
 
 app.get('/api/uploads', (req, res) => {
   const store = readStore();
-  res.json(store.uploads || []);
+  const workerId = req.query.workerId ? Number(req.query.workerId) : null;
+  let uploads = store.uploads || [];
+  if (workerId) uploads = uploads.filter(u => Number(u.workerId) === workerId);
+  res.json(uploads);
 });
 
 app.post('/api/uploads', (req, res) => {
@@ -725,6 +776,26 @@ app.post('/api/send-test-digest', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message || 'Failed to send test digest.' });
   }
+});
+
+
+app.get('/api/worker-portal/:id', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const worker = (store.workers || []).find(w => w.id === id);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+  const uploads = (store.uploads || []).filter(u => Number(u.workerId) === id);
+  const alerts = [];
+  const certAttention = (worker.certifications || []).filter(c => ['Expiring Soon','Expired','Needs Attention'].includes(String(c.status || '')));
+  const bloodworkAttention = (worker.bloodwork || []).filter(b => ['Due Soon','Overdue','Needs Attention'].includes(String(b.status || '')));
+  if (certAttention.length) alerts.push({ title: 'Certification alerts', detail: `${certAttention.length} certification item(s) need attention.` });
+  if (bloodworkAttention.length) alerts.push({ title: 'Bloodwork alerts', detail: `${bloodworkAttention.length} bloodwork item(s) need attention.` });
+  const jobsReady = (store.jobs || []).filter(j => classifyWorkerForJob(worker, j).bucket !== 'notQualified').map(j => j.name);
+  res.json({
+    worker: { ...worker, jobsReady },
+    uploads,
+    alerts
+  });
 });
 
 app.get('/api/admin', (req, res) => {

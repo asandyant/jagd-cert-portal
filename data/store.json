@@ -70,7 +70,9 @@
         "state": "NY",
         "expires": "2030-06-08",
         "status": "Current"
-      }
+      },
+      "portalUsername": "aaccettulli",
+      "portalPassword": "worker123"
     },
     {
       "id": 2,
@@ -122,7 +124,9 @@
         "state": "OH",
         "expires": "2029-02-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jaguilarmarquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 3,
@@ -168,7 +172,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jaguilar",
+      "portalPassword": "worker123"
     },
     {
       "id": 4,
@@ -194,7 +200,9 @@
         "state": "OH",
         "expires": "2027-12-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dalexander",
+      "portalPassword": "worker123"
     },
     {
       "id": 5,
@@ -220,7 +228,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "halvarenga",
+      "portalPassword": "worker123"
     },
     {
       "id": 6,
@@ -258,7 +268,9 @@
         "state": "MD",
         "expires": "2032-01-05",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jalvarez",
+      "portalPassword": "worker123"
     },
     {
       "id": 7,
@@ -296,7 +308,9 @@
         "state": "OH",
         "expires": "2026-09-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jalvarezmarquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 8,
@@ -322,7 +336,9 @@
         "state": "MI",
         "expires": "2029-05-02",
         "status": "Current"
-      }
+      },
+      "portalUsername": "kandersonjr",
+      "portalPassword": "worker123"
     },
     {
       "id": 9,
@@ -417,7 +433,9 @@
         "state": "NJ",
         "expires": "2029-02-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "eantoneli",
+      "portalPassword": "worker123"
     },
     {
       "id": 10,
@@ -511,7 +529,9 @@
         "state": "NJ",
         "expires": "2028-03-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "aantunes",
+      "portalPassword": "worker123"
     },
     {
       "id": 11,
@@ -557,7 +577,9 @@
         "state": "MD",
         "expires": "2033-10-14",
         "status": "Current"
-      }
+      },
+      "portalUsername": "earguetamendoza",
+      "portalPassword": "worker123"
     },
     {
       "id": 12,
@@ -609,7 +631,9 @@
         "state": "NY",
         "expires": "2027-09-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jaristamartinez",
+      "portalPassword": "worker123"
     },
     {
       "id": 13,
@@ -635,7 +659,9 @@
         "state": "NY",
         "expires": "2031-06-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rbaez",
+      "portalPassword": "worker123"
     },
     {
       "id": 14,
@@ -730,7 +756,9 @@
         "state": "NJ",
         "expires": "2029-10-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "vbauermann",
+      "portalPassword": "worker123"
     },
     {
       "id": 15,
@@ -756,7 +784,9 @@
         "state": "MI",
         "expires": "2027-07-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "cbean",
+      "portalPassword": "worker123"
     },
     {
       "id": 16,
@@ -860,7 +890,9 @@
         "state": "NJ",
         "expires": "2028-11-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "cbenitez",
+      "portalPassword": "worker123"
     },
     {
       "id": 17,
@@ -938,7 +970,9 @@
         "state": "NY",
         "expires": "2027-02-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "hbetances",
+      "portalPassword": "worker123"
     },
     {
       "id": 18,
@@ -970,7 +1004,9 @@
         "state": "OH",
         "expires": "2031-03-19",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dbilliris",
+      "portalPassword": "worker123"
     },
     {
       "id": 19,
@@ -996,7 +1032,9 @@
         "state": "OH",
         "expires": "2028-10-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "nbilliris",
+      "portalPassword": "worker123"
     },
     {
       "id": 20,
@@ -1078,7 +1116,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ibrandino",
+      "portalPassword": "worker123"
     },
     {
       "id": 21,
@@ -1104,7 +1144,9 @@
         "state": "MD",
         "expires": "2029-12-19",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fbrizuela",
+      "portalPassword": "worker123"
     },
     {
       "id": 22,
@@ -1168,7 +1210,9 @@
         "state": "VA",
         "expires": "2027-02-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tbrown",
+      "portalPassword": "worker123"
     },
     {
       "id": 23,
@@ -1238,7 +1282,9 @@
         "state": "NY",
         "expires": "2029-02-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ccalderon",
+      "portalPassword": "worker123"
     },
     {
       "id": 24,
@@ -1326,7 +1372,9 @@
         "state": "NJ",
         "expires": "2026-10-15",
         "status": "Current"
-      }
+      },
+      "portalUsername": "acalhau",
+      "portalPassword": "worker123"
     },
     {
       "id": 25,
@@ -1352,7 +1400,9 @@
         "state": "NY",
         "expires": "2028-04-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ncamacho",
+      "portalPassword": "worker123"
     },
     {
       "id": 26,
@@ -1406,7 +1456,9 @@
         "state": "NJ",
         "expires": "2026-08-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gcampos",
+      "portalPassword": "worker123"
     },
     {
       "id": 27,
@@ -1444,7 +1496,9 @@
         "state": "LA",
         "expires": "2030-01-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ccanales",
+      "portalPassword": "worker123"
     },
     {
       "id": 28,
@@ -1470,7 +1524,9 @@
         "state": "LA",
         "expires": "2029-05-02",
         "status": "Current"
-      }
+      },
+      "portalUsername": "kcanalestorres",
+      "portalPassword": "worker123"
     },
     {
       "id": 29,
@@ -1496,7 +1552,9 @@
         "state": "MD",
         "expires": "2032-08-19",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rcarrasquillo",
+      "portalPassword": "worker123"
     },
     {
       "id": 30,
@@ -1536,7 +1594,9 @@
         "state": "NY",
         "expires": "2028-08-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jcastellanos",
+      "portalPassword": "worker123"
     },
     {
       "id": 31,
@@ -1616,7 +1676,9 @@
         "state": "NJ",
         "expires": "2026-06-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "aceranto",
+      "portalPassword": "worker123"
     },
     {
       "id": 32,
@@ -1662,7 +1724,9 @@
         "state": "MD",
         "expires": "2030-09-12",
         "status": "Current"
-      }
+      },
+      "portalUsername": "nchavezjuarez",
+      "portalPassword": "worker123"
     },
     {
       "id": 33,
@@ -1688,7 +1752,9 @@
         "state": "NY",
         "expires": "2032-03-23",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tchillious",
+      "portalPassword": "worker123"
     },
     {
       "id": 34,
@@ -1744,7 +1810,9 @@
         "state": "NJ",
         "expires": "2025-11-16",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "acolon",
+      "portalPassword": "worker123"
     },
     {
       "id": 35,
@@ -1770,7 +1838,9 @@
         "state": "MI",
         "expires": "2029-08-31",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gcoulter",
+      "portalPassword": "worker123"
     },
     {
       "id": 36,
@@ -1810,7 +1880,9 @@
         "state": "NJ",
         "expires": "2029-08-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ecruzflores",
+      "portalPassword": "worker123"
     },
     {
       "id": 37,
@@ -1836,7 +1908,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ndacruz",
+      "portalPassword": "worker123"
     },
     {
       "id": 38,
@@ -1880,7 +1954,9 @@
         "state": "NJ",
         "expires": "2029-01-03",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mdacosta",
+      "portalPassword": "worker123"
     },
     {
       "id": 39,
@@ -2002,7 +2078,9 @@
         "state": "PA",
         "expires": "2026-01-31",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "pdawson",
+      "portalPassword": "worker123"
     },
     {
       "id": 40,
@@ -2052,7 +2130,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ydeandradenascimento",
+      "portalPassword": "worker123"
     },
     {
       "id": 41,
@@ -2128,7 +2208,9 @@
         "state": "NJ",
         "expires": "2028-03-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "cdefranca",
+      "portalPassword": "worker123"
     },
     {
       "id": 42,
@@ -2184,7 +2266,9 @@
         "state": "NJ",
         "expires": "2028-02-18",
         "status": "Current"
-      }
+      },
+      "portalUsername": "adelgado",
+      "portalPassword": "worker123"
     },
     {
       "id": 43,
@@ -2218,7 +2302,9 @@
         "state": "NJ",
         "expires": "2027-03-12",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rdeoliveira",
+      "portalPassword": "worker123"
     },
     {
       "id": 44,
@@ -2270,7 +2356,9 @@
         "state": "NJ",
         "expires": "2027-01-02",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gdesplancher",
+      "portalPassword": "worker123"
     },
     {
       "id": 45,
@@ -2314,7 +2402,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mdesouza",
+      "portalPassword": "worker123"
     },
     {
       "id": 46,
@@ -2374,7 +2464,9 @@
         "state": "CT",
         "expires": "2028-05-23",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mdias",
+      "portalPassword": "worker123"
     },
     {
       "id": 47,
@@ -2400,7 +2492,9 @@
         "state": "NY",
         "expires": "2030-01-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fdiaz",
+      "portalPassword": "worker123"
     },
     {
       "id": 48,
@@ -2426,7 +2520,9 @@
         "state": "CT",
         "expires": "-",
         "status": "Current"
-      }
+      },
+      "portalUsername": "hdiazrodas",
+      "portalPassword": "worker123"
     },
     {
       "id": 49,
@@ -2504,7 +2600,9 @@
         "state": "NJ",
         "expires": "2027-01-29",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jdomaleski",
+      "portalPassword": "worker123"
     },
     {
       "id": 50,
@@ -2582,7 +2680,9 @@
         "state": "NJ",
         "expires": "2029-01-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "adossantos",
+      "portalPassword": "worker123"
     },
     {
       "id": 51,
@@ -2608,7 +2708,9 @@
         "state": "OH",
         "expires": "2029-03-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "edouropoulos",
+      "portalPassword": "worker123"
     },
     {
       "id": 52,
@@ -2673,7 +2775,9 @@
         "state": "OH",
         "expires": "2028-10-14",
         "status": "Current"
-      }
+      },
+      "portalUsername": "adovas",
+      "portalPassword": "worker123"
     },
     {
       "id": 53,
@@ -2699,7 +2803,9 @@
         "state": "OH",
         "expires": "2032-11-03",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mdovas",
+      "portalPassword": "worker123"
     },
     {
       "id": 54,
@@ -2725,7 +2831,9 @@
         "state": "MI",
         "expires": "2026-03-07",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "mdunigan",
+      "portalPassword": "worker123"
     },
     {
       "id": 55,
@@ -2751,7 +2859,9 @@
         "state": "NV",
         "expires": "2030-01-31",
         "status": "Current"
-      }
+      },
+      "portalUsername": "aduronhernandez",
+      "portalPassword": "worker123"
     },
     {
       "id": 56,
@@ -2777,7 +2887,9 @@
         "state": "MI",
         "expires": "2026-01-23",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "mfaber",
+      "portalPassword": "worker123"
     },
     {
       "id": 57,
@@ -2803,7 +2915,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jfernandez",
+      "portalPassword": "worker123"
     },
     {
       "id": 58,
@@ -2862,7 +2976,9 @@
         "state": "NJ",
         "expires": "2028-12-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jferreira",
+      "portalPassword": "worker123"
     },
     {
       "id": 59,
@@ -2924,7 +3040,9 @@
         "state": "NJ",
         "expires": "2029-03-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rferreira",
+      "portalPassword": "worker123"
     },
     {
       "id": 60,
@@ -2950,7 +3068,9 @@
         "state": "CT",
         "expires": "2027-06-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "nflorence",
+      "portalPassword": "worker123"
     },
     {
       "id": 61,
@@ -2996,7 +3116,9 @@
         "state": "NY",
         "expires": "2032-08-12",
         "status": "Current"
-      }
+      },
+      "portalUsername": "bforget",
+      "portalPassword": "worker123"
     },
     {
       "id": 62,
@@ -3052,7 +3174,9 @@
         "state": "NJ",
         "expires": "2027-09-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jfortes",
+      "portalPassword": "worker123"
     },
     {
       "id": 63,
@@ -3129,7 +3253,9 @@
         "state": "NJ",
         "expires": "2027-03-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ifoster",
+      "portalPassword": "worker123"
     },
     {
       "id": 64,
@@ -3188,7 +3314,9 @@
         "state": "NY",
         "expires": "2029-01-23",
         "status": "Current"
-      }
+      },
+      "portalUsername": "vgamarraparedes",
+      "portalPassword": "worker123"
     },
     {
       "id": 65,
@@ -3294,7 +3422,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "tgavinovich",
+      "portalPassword": "worker123"
     },
     {
       "id": 66,
@@ -3320,7 +3450,9 @@
         "state": "LA",
         "expires": "2027-08-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ogonzalez",
+      "portalPassword": "worker123"
     },
     {
       "id": 67,
@@ -3442,7 +3574,9 @@
         "state": "OH",
         "expires": "2026-11-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ggrillis",
+      "portalPassword": "worker123"
     },
     {
       "id": 68,
@@ -3552,7 +3686,9 @@
         "state": "OH",
         "expires": "2030-12-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ngrillis",
+      "portalPassword": "worker123"
     },
     {
       "id": 69,
@@ -3604,7 +3740,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "rguerrahernandez",
+      "portalPassword": "worker123"
     },
     {
       "id": 70,
@@ -3662,7 +3800,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "rguzhnay",
+      "portalPassword": "worker123"
     },
     {
       "id": 71,
@@ -3688,7 +3828,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jguzman",
+      "portalPassword": "worker123"
     },
     {
       "id": 72,
@@ -3824,7 +3966,9 @@
         "state": "PA",
         "expires": "2028-08-06",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mhaffner",
+      "portalPassword": "worker123"
     },
     {
       "id": 73,
@@ -3850,7 +3994,9 @@
         "state": "LA",
         "expires": "2030-12-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gharper",
+      "portalPassword": "worker123"
     },
     {
       "id": 74,
@@ -3888,7 +4034,9 @@
         "state": "NJ",
         "expires": "2030-01-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ghems",
+      "portalPassword": "worker123"
     },
     {
       "id": 75,
@@ -3988,7 +4136,9 @@
         "state": "NJ",
         "expires": "2025-10-13",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "eheil",
+      "portalPassword": "worker123"
     },
     {
       "id": 76,
@@ -4096,7 +4246,9 @@
         "state": "NJ",
         "expires": "2029-11-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ehornung",
+      "portalPassword": "worker123"
     },
     {
       "id": 77,
@@ -4152,7 +4304,9 @@
         "state": "NJ",
         "expires": "2028-11-29",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rhornung",
+      "portalPassword": "worker123"
     },
     {
       "id": 78,
@@ -4178,7 +4332,9 @@
         "state": "CT",
         "expires": "2028-06-05",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ahuezo",
+      "portalPassword": "worker123"
     },
     {
       "id": 79,
@@ -4204,7 +4360,9 @@
         "state": "OH",
         "expires": "2025-10-25",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "diatropoulos",
+      "portalPassword": "worker123"
     },
     {
       "id": 80,
@@ -4230,7 +4388,9 @@
         "state": "OH",
         "expires": "2026-10-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "miatropoulos",
+      "portalPassword": "worker123"
     },
     {
       "id": 81,
@@ -4280,7 +4440,9 @@
         "state": "OH",
         "expires": "2025-08-01",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "mkavouras",
+      "portalPassword": "worker123"
     },
     {
       "id": 82,
@@ -4306,7 +4468,9 @@
         "state": "OH",
         "expires": "2026-09-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "pkoullias",
+      "portalPassword": "worker123"
     },
     {
       "id": 83,
@@ -4382,7 +4546,9 @@
         "state": "NJ",
         "expires": "2027-01-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tladd",
+      "portalPassword": "worker123"
     },
     {
       "id": 84,
@@ -4438,7 +4604,9 @@
         "state": "NY",
         "expires": "2033-04-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "plall",
+      "portalPassword": "worker123"
     },
     {
       "id": 85,
@@ -4464,7 +4632,9 @@
         "state": "MI",
         "expires": "2027-01-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "slee",
+      "portalPassword": "worker123"
     },
     {
       "id": 86,
@@ -4490,7 +4660,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "clopex",
+      "portalPassword": "worker123"
     },
     {
       "id": 87,
@@ -4531,7 +4703,9 @@
         "state": "NJ",
         "expires": "2030-03-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "flopezgonzalez",
+      "portalPassword": "worker123"
     },
     {
       "id": 88,
@@ -4631,7 +4805,9 @@
         "state": "NJ",
         "expires": "-",
         "status": "Current"
-      }
+      },
+      "portalUsername": "alovich",
+      "portalPassword": "worker123"
     },
     {
       "id": 89,
@@ -4705,7 +4881,9 @@
         "state": "OH",
         "expires": "2030-09-26",
         "status": "Current"
-      }
+      },
+      "portalUsername": "glyras",
+      "portalPassword": "worker123"
     },
     {
       "id": 90,
@@ -4731,7 +4909,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "nlyras",
+      "portalPassword": "worker123"
     },
     {
       "id": 91,
@@ -4795,7 +4975,9 @@
         "state": "OH",
         "expires": "2030-01-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mmaillis",
+      "portalPassword": "worker123"
     },
     {
       "id": 92,
@@ -4839,7 +5021,9 @@
         "state": "FL",
         "expires": "2028-05-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jmanglis",
+      "portalPassword": "worker123"
     },
     {
       "id": 93,
@@ -4865,7 +5049,9 @@
         "state": "NY",
         "expires": "2028-10-06",
         "status": "Current"
-      }
+      },
+      "portalUsername": "amanno",
+      "portalPassword": "worker123"
     },
     {
       "id": 94,
@@ -4891,7 +5077,9 @@
         "state": "CT",
         "expires": "2032-11-30",
         "status": "Current"
-      }
+      },
+      "portalUsername": "smanzano",
+      "portalPassword": "worker123"
     },
     {
       "id": 95,
@@ -4917,7 +5105,9 @@
         "state": "FL",
         "expires": "2026-03-09",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "jmarquezeuceda",
+      "portalPassword": "worker123"
     },
     {
       "id": 96,
@@ -4943,7 +5133,9 @@
         "state": "MD",
         "expires": "2026-04-24",
         "status": "Expiring Soon"
-      }
+      },
+      "portalUsername": "jmarquesserrano",
+      "portalPassword": "worker123"
     },
     {
       "id": 97,
@@ -4969,7 +5161,9 @@
         "state": "VA",
         "expires": "2026-06-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fmartinez",
+      "portalPassword": "worker123"
     },
     {
       "id": 98,
@@ -4995,7 +5189,9 @@
         "state": "OH",
         "expires": "2031-04-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "imartinez",
+      "portalPassword": "worker123"
     },
     {
       "id": 99,
@@ -5089,7 +5285,9 @@
         "state": "NY",
         "expires": "2029-11-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rmartinez",
+      "portalPassword": "worker123"
     },
     {
       "id": 100,
@@ -5115,7 +5313,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mmavroudis",
+      "portalPassword": "worker123"
     },
     {
       "id": 101,
@@ -5141,7 +5341,9 @@
         "state": "OH",
         "expires": "2029-10-30",
         "status": "Current"
-      }
+      },
+      "portalUsername": "vmavroudis",
+      "portalPassword": "worker123"
     },
     {
       "id": 102,
@@ -5167,7 +5369,9 @@
         "state": "MI",
         "expires": "2026-05-26",
         "status": "Expiring Soon"
-      }
+      },
+      "portalUsername": "fmedina",
+      "portalPassword": "worker123"
     },
     {
       "id": 103,
@@ -5262,7 +5466,9 @@
         "state": "NY",
         "expires": "2030-08-28",
         "status": "Current"
-      }
+      },
+      "portalUsername": "hmelara",
+      "portalPassword": "worker123"
     },
     {
       "id": 104,
@@ -5312,7 +5518,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "rmendonarodrigues",
+      "portalPassword": "worker123"
     },
     {
       "id": 105,
@@ -5338,7 +5546,9 @@
         "state": "MD",
         "expires": "2025-09-08",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "omonge",
+      "portalPassword": "worker123"
     },
     {
       "id": 106,
@@ -5487,7 +5697,9 @@
         "state": "NJ",
         "expires": "2030-01-08",
         "status": "Current"
-      }
+      },
+      "portalUsername": "wmonteiro",
+      "portalPassword": "worker123"
     },
     {
       "id": 107,
@@ -5549,7 +5761,9 @@
         "state": "CT",
         "expires": "2029-11-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fmontenegro",
+      "portalPassword": "worker123"
     },
     {
       "id": 108,
@@ -5575,7 +5789,9 @@
         "state": "No Drivers License",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mmunoz",
+      "portalPassword": "worker123"
     },
     {
       "id": 109,
@@ -5601,7 +5817,9 @@
         "state": "NJ",
         "expires": "2027-01-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tmurphy",
+      "portalPassword": "worker123"
     },
     {
       "id": 110,
@@ -5627,7 +5845,9 @@
         "state": "FL ID Only",
         "expires": "-",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tnatsoulis",
+      "portalPassword": "worker123"
     },
     {
       "id": 111,
@@ -5671,7 +5891,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "anitis",
+      "portalPassword": "worker123"
     },
     {
       "id": 112,
@@ -5697,7 +5919,9 @@
         "state": "MI",
         "expires": "2026-02-08",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "bnovak",
+      "portalPassword": "worker123"
     },
     {
       "id": 113,
@@ -5723,7 +5947,9 @@
         "state": "FL",
         "expires": "2031-02-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "eoliva",
+      "portalPassword": "worker123"
     },
     {
       "id": 114,
@@ -5755,7 +5981,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "wolivaalvares",
+      "portalPassword": "worker123"
     },
     {
       "id": 115,
@@ -5781,7 +6009,9 @@
         "state": "VA",
         "expires": "2027-09-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "spapadopoulos",
+      "portalPassword": "worker123"
     },
     {
       "id": 116,
@@ -5807,7 +6037,9 @@
         "state": "NY",
         "expires": "2031-09-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rpatterson",
+      "portalPassword": "worker123"
     },
     {
       "id": 117,
@@ -5907,7 +6139,9 @@
         "state": "NY",
         "expires": "2029-05-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "cpereira",
+      "portalPassword": "worker123"
     },
     {
       "id": 118,
@@ -5953,7 +6187,9 @@
         "state": "MD",
         "expires": "2032-06-28",
         "status": "Current"
-      }
+      },
+      "portalUsername": "wperez",
+      "portalPassword": "worker123"
     },
     {
       "id": 119,
@@ -6017,7 +6253,9 @@
         "state": "NY",
         "expires": "2027-12-14",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dpizanias",
+      "portalPassword": "worker123"
     },
     {
       "id": 120,
@@ -6043,7 +6281,9 @@
         "state": "CA",
         "expires": "2027-04-15",
         "status": "Current"
-      }
+      },
+      "portalUsername": "bponcediaz",
+      "portalPassword": "worker123"
     },
     {
       "id": 121,
@@ -6132,7 +6372,9 @@
         "state": "NJ",
         "expires": "2029-03-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mprachum",
+      "portalPassword": "worker123"
     },
     {
       "id": 122,
@@ -6158,7 +6400,9 @@
         "state": "MI",
         "expires": "2027-11-15",
         "status": "Current"
-      }
+      },
+      "portalUsername": "bpratt",
+      "portalPassword": "worker123"
     },
     {
       "id": 123,
@@ -6217,7 +6461,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "iprodelik",
+      "portalPassword": "worker123"
     },
     {
       "id": 124,
@@ -6281,7 +6527,9 @@
         "state": "NY",
         "expires": "2032-02-26",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jquinones",
+      "portalPassword": "worker123"
     },
     {
       "id": 125,
@@ -6319,7 +6567,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "aramosjr",
+      "portalPassword": "worker123"
     },
     {
       "id": 126,
@@ -6378,7 +6628,9 @@
         "state": "NY",
         "expires": "2031-11-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "areyes",
+      "portalPassword": "worker123"
     },
     {
       "id": 127,
@@ -6424,7 +6676,9 @@
         "state": "NJ",
         "expires": "2029-05-21",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dribeiro",
+      "portalPassword": "worker123"
     },
     {
       "id": 128,
@@ -6549,7 +6803,9 @@
         "state": "NY",
         "expires": "2027-07-30",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rroach",
+      "portalPassword": "worker123"
     },
     {
       "id": 129,
@@ -6575,7 +6831,9 @@
         "state": "CT",
         "expires": "2034-01-18",
         "status": "Current"
-      }
+      },
+      "portalUsername": "hrodas",
+      "portalPassword": "worker123"
     },
     {
       "id": 130,
@@ -6634,7 +6892,9 @@
         "state": "NJ",
         "expires": "2028-03-14",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mrodrigues",
+      "portalPassword": "worker123"
     },
     {
       "id": 131,
@@ -6660,7 +6920,9 @@
         "state": "MI",
         "expires": "2028-07-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "krowsey",
+      "portalPassword": "worker123"
     },
     {
       "id": 132,
@@ -6698,7 +6960,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mrusso",
+      "portalPassword": "worker123"
     },
     {
       "id": 133,
@@ -6724,7 +6988,9 @@
         "state": "NY",
         "expires": "2029-07-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "msabbagh",
+      "portalPassword": "worker123"
     },
     {
       "id": 134,
@@ -6812,7 +7078,9 @@
         "state": "NY",
         "expires": "2031-11-29",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jsantiago",
+      "portalPassword": "worker123"
     },
     {
       "id": 135,
@@ -6896,7 +7164,9 @@
         "state": "FL",
         "expires": "2033-09-26",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tsaracena",
+      "portalPassword": "worker123"
     },
     {
       "id": 136,
@@ -6922,7 +7192,9 @@
         "state": "MI",
         "expires": "2030-02-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jseaborn",
+      "portalPassword": "worker123"
     },
     {
       "id": 137,
@@ -6948,7 +7220,9 @@
         "state": "NY",
         "expires": "2030-06-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "msheats",
+      "portalPassword": "worker123"
     },
     {
       "id": 138,
@@ -6986,7 +7260,9 @@
         "state": "PA",
         "expires": "2027-04-30",
         "status": "Current"
-      }
+      },
+      "portalUsername": "kshute",
+      "portalPassword": "worker123"
     },
     {
       "id": 139,
@@ -7024,7 +7300,9 @@
         "state": "No DL",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "fsilverio",
+      "portalPassword": "worker123"
     },
     {
       "id": 140,
@@ -7086,7 +7364,9 @@
         "state": "OH",
         "expires": "2033-07-02",
         "status": "Current"
-      }
+      },
+      "portalUsername": "asisalouis",
+      "portalPassword": "worker123"
     },
     {
       "id": 141,
@@ -7148,7 +7428,9 @@
         "state": "OH",
         "expires": "2029-04-14",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gsisalouis",
+      "portalPassword": "worker123"
     },
     {
       "id": 142,
@@ -7236,7 +7518,9 @@
         "state": "NJ",
         "expires": "2028-06-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "asluzala",
+      "portalPassword": "worker123"
     },
     {
       "id": 143,
@@ -7286,7 +7570,9 @@
         "state": "NJ",
         "expires": "2026-08-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "esoares",
+      "portalPassword": "worker123"
     },
     {
       "id": 144,
@@ -7330,7 +7616,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "fsoares",
+      "portalPassword": "worker123"
     },
     {
       "id": 145,
@@ -7356,7 +7644,9 @@
         "state": "MI",
         "expires": "2026-12-29",
         "status": "Current"
-      }
+      },
+      "portalUsername": "cstephans",
+      "portalPassword": "worker123"
     },
     {
       "id": 146,
@@ -7474,7 +7764,9 @@
         "state": "OH",
         "expires": "2029-10-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dstucky",
+      "portalPassword": "worker123"
     },
     {
       "id": 147,
@@ -7500,7 +7792,9 @@
         "state": "NY",
         "expires": "2029-09-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "psynowiec",
+      "portalPassword": "worker123"
     },
     {
       "id": 148,
@@ -7540,7 +7834,9 @@
         "state": "NY",
         "expires": "2028-03-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "tswan",
+      "portalPassword": "worker123"
     },
     {
       "id": 149,
@@ -7566,7 +7862,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jtewes",
+      "portalPassword": "worker123"
     },
     {
       "id": 150,
@@ -7592,7 +7890,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "etiliakos",
+      "portalPassword": "worker123"
     },
     {
       "id": 151,
@@ -7648,7 +7948,9 @@
         "state": "NY",
         "expires": "2027-05-18",
         "status": "Current"
-      }
+      },
+      "portalUsername": "stonge",
+      "portalPassword": "worker123"
     },
     {
       "id": 152,
@@ -7680,7 +7982,9 @@
         "state": "NY",
         "expires": "2029-07-01",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ftorres",
+      "portalPassword": "worker123"
     },
     {
       "id": 153,
@@ -7706,7 +8010,9 @@
         "state": "OH",
         "expires": "2026-07-26",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ltracy",
+      "portalPassword": "worker123"
     },
     {
       "id": 154,
@@ -7770,7 +8076,9 @@
         "state": "NY",
         "expires": "2027-01-15",
         "status": "Current"
-      }
+      },
+      "portalUsername": "burbina",
+      "portalPassword": "worker123"
     },
     {
       "id": 155,
@@ -7841,7 +8149,9 @@
         "state": "NY",
         "expires": "2033-05-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rvasquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 156,
@@ -7867,7 +8177,9 @@
         "state": "FL",
         "expires": "2033-12-03",
         "status": "Current"
-      }
+      },
+      "portalUsername": "hvelasquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 157,
@@ -7913,7 +8225,9 @@
         "state": "IL",
         "expires": "2029-09-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mvelasquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 158,
@@ -7953,7 +8267,9 @@
         "state": "FL",
         "expires": "2032-03-01",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ivieira",
+      "portalPassword": "worker123"
     },
     {
       "id": 159,
@@ -7991,7 +8307,9 @@
         "state": "No DL",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jvillavicencio",
+      "portalPassword": "worker123"
     },
     {
       "id": 160,
@@ -8017,7 +8335,9 @@
         "state": "MI",
         "expires": "2027-01-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ewegner",
+      "portalPassword": "worker123"
     },
     {
       "id": 161,
@@ -8043,7 +8363,9 @@
         "state": "MI",
         "expires": "2029-12-24",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jwiechert",
+      "portalPassword": "worker123"
     },
     {
       "id": 162,
@@ -8069,7 +8391,9 @@
         "state": "NY",
         "expires": "2026-12-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jwilliams",
+      "portalPassword": "worker123"
     },
     {
       "id": 163,
@@ -8109,7 +8433,9 @@
         "state": "NY",
         "expires": "2027-07-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fwerner",
+      "portalPassword": "worker123"
     },
     {
       "id": 164,
@@ -8141,7 +8467,9 @@
         "state": "MI",
         "expires": "2023-05-17",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "wwoolum",
+      "portalPassword": "worker123"
     },
     {
       "id": 165,
@@ -8221,7 +8549,9 @@
         "state": "OH",
         "expires": "2022-07-04",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "sxenikis",
+      "portalPassword": "worker123"
     },
     {
       "id": 166,
@@ -8305,7 +8635,9 @@
         "state": "NJ",
         "expires": "2028-07-01",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ryoung",
+      "portalPassword": "worker123"
     },
     {
       "id": 167,
@@ -8373,7 +8705,9 @@
         "state": "NJ",
         "expires": "2027-06-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "syoungjr",
+      "portalPassword": "worker123"
     },
     {
       "id": 168,
@@ -8449,7 +8783,9 @@
         "state": "NJ",
         "expires": "2026-07-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "syun",
+      "portalPassword": "worker123"
     },
     {
       "id": 169,
@@ -8468,7 +8804,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "inactive",
+      "portalPassword": "worker123"
     },
     {
       "id": 170,
@@ -8593,7 +8931,9 @@
         "state": "NY",
         "expires": "2031-06-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "aagostini",
+      "portalPassword": "worker123"
     },
     {
       "id": 171,
@@ -8619,7 +8959,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jaguilarmarques",
+      "portalPassword": "worker123"
     },
     {
       "id": 172,
@@ -8645,7 +8987,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jaguilarvilleda",
+      "portalPassword": "worker123"
     },
     {
       "id": 173,
@@ -8671,7 +9015,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dallen",
+      "portalPassword": "worker123"
     },
     {
       "id": 174,
@@ -8697,7 +9043,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "damorim",
+      "portalPassword": "worker123"
     },
     {
       "id": 175,
@@ -8723,7 +9071,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "sanderson",
+      "portalPassword": "worker123"
     },
     {
       "id": 176,
@@ -8787,7 +9137,9 @@
         "state": "NJ",
         "expires": "2027-08-10",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rantunes",
+      "portalPassword": "worker123"
     },
     {
       "id": 177,
@@ -8845,7 +9197,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jaraujo",
+      "portalPassword": "worker123"
     },
     {
       "id": 178,
@@ -8939,7 +9293,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "satsas",
+      "portalPassword": "worker123"
     },
     {
       "id": 179,
@@ -8965,7 +9321,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "kbayley",
+      "portalPassword": "worker123"
     },
     {
       "id": 180,
@@ -9009,7 +9367,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dbisono",
+      "portalPassword": "worker123"
     },
     {
       "id": 181,
@@ -9035,7 +9395,9 @@
         "state": "LA",
         "expires": "2030-01-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ccanales1",
+      "portalPassword": "worker123"
     },
     {
       "id": 182,
@@ -9097,7 +9459,9 @@
         "state": "NJ",
         "expires": "2027-04-01",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jcastro",
+      "portalPassword": "worker123"
     },
     {
       "id": 183,
@@ -9123,7 +9487,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "tchamberlainjr",
+      "portalPassword": "worker123"
     },
     {
       "id": 184,
@@ -9149,7 +9515,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "nchavez",
+      "portalPassword": "worker123"
     },
     {
       "id": 185,
@@ -9213,7 +9581,9 @@
         "state": "NJ",
         "expires": "2027-05-22",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dcolatrella",
+      "portalPassword": "worker123"
     },
     {
       "id": 186,
@@ -9284,7 +9654,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jcoles",
+      "portalPassword": "worker123"
     },
     {
       "id": 187,
@@ -9343,7 +9715,9 @@
         "state": "MD",
         "expires": "2031-12-25",
         "status": "Current"
-      }
+      },
+      "portalUsername": "fcruz",
+      "portalPassword": "worker123"
     },
     {
       "id": 188,
@@ -9381,7 +9755,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ndacruz1",
+      "portalPassword": "worker123"
     },
     {
       "id": 189,
@@ -9464,7 +9840,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "adasilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 190,
@@ -9535,7 +9913,9 @@
         "state": "NY",
         "expires": "2027-12-31",
         "status": "Current"
-      }
+      },
+      "portalUsername": "gdasilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 191,
@@ -9561,7 +9941,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "bdavies",
+      "portalPassword": "worker123"
     },
     {
       "id": 192,
@@ -9607,7 +9989,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ndelima",
+      "portalPassword": "worker123"
     },
     {
       "id": 193,
@@ -9671,7 +10055,9 @@
         "state": "NJ",
         "expires": "2025-11-04",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "jdemoura",
+      "portalPassword": "worker123"
     },
     {
       "id": 194,
@@ -9690,7 +10076,9 @@
         "state": "OH",
         "expires": "2032-06-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "ddiplas",
+      "portalPassword": "worker123"
     },
     {
       "id": 195,
@@ -9734,7 +10122,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "ddossantos",
+      "portalPassword": "worker123"
     },
     {
       "id": 196,
@@ -9792,7 +10182,9 @@
         "state": "NJ",
         "expires": "2027-09-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mdrosda",
+      "portalPassword": "worker123"
     },
     {
       "id": 197,
@@ -9818,7 +10210,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "sefaw",
+      "portalPassword": "worker123"
     },
     {
       "id": 198,
@@ -9883,7 +10277,9 @@
         "state": "PA",
         "expires": "2026-12-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "selhamamy",
+      "portalPassword": "worker123"
     },
     {
       "id": 199,
@@ -9942,7 +10338,9 @@
         "state": "LA",
         "expires": "2030-09-11",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jelvircruz",
+      "portalPassword": "worker123"
     },
     {
       "id": 200,
@@ -9968,7 +10366,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "kestrela",
+      "portalPassword": "worker123"
     },
     {
       "id": 201,
@@ -10026,7 +10426,9 @@
         "state": "MD",
         "expires": "2030-12-31",
         "status": "Current"
-      }
+      },
+      "portalUsername": "jfeliz",
+      "portalPassword": "worker123"
     },
     {
       "id": 202,
@@ -10052,7 +10454,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "afernandes",
+      "portalPassword": "worker123"
     },
     {
       "id": 203,
@@ -10110,7 +10514,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jferreira1",
+      "portalPassword": "worker123"
     },
     {
       "id": 204,
@@ -10166,7 +10572,9 @@
         "state": "PA",
         "expires": "2026-05-01",
         "status": "Expiring Soon"
-      }
+      },
+      "portalUsername": "tfinnegan",
+      "portalPassword": "worker123"
     },
     {
       "id": 205,
@@ -10207,7 +10615,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "cfortes",
+      "portalPassword": "worker123"
     },
     {
       "id": 206,
@@ -10285,7 +10695,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jfortes1",
+      "portalPassword": "worker123"
     },
     {
       "id": 207,
@@ -10331,7 +10743,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jgonzalez",
+      "portalPassword": "worker123"
     },
     {
       "id": 208,
@@ -10363,7 +10777,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dhazidrosos",
+      "portalPassword": "worker123"
     },
     {
       "id": 209,
@@ -10389,7 +10805,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dheng",
+      "portalPassword": "worker123"
     },
     {
       "id": 210,
@@ -10460,7 +10878,9 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "chilgemberg",
+      "portalPassword": "worker123"
     },
     {
       "id": 211,
@@ -10486,7 +10906,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "hhornung",
+      "portalPassword": "worker123"
     },
     {
       "id": 212,
@@ -10542,7 +10964,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "pienczmionka",
+      "portalPassword": "worker123"
     },
     {
       "id": 213,
@@ -10595,7 +11019,9 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "pjeffreys",
+      "portalPassword": "worker123"
     },
     {
       "id": 214,
@@ -10621,7 +11047,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "pmagriplis",
+      "portalPassword": "worker123"
     },
     {
       "id": 215,
@@ -10686,7 +11114,9 @@
         "state": "NJ",
         "expires": "2028-08-29",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rmaniche",
+      "portalPassword": "worker123"
     },
     {
       "id": 216,
@@ -10739,7 +11169,9 @@
         "state": "PA",
         "expires": "2026-04-11",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "rmarquez",
+      "portalPassword": "worker123"
     },
     {
       "id": 217,
@@ -10804,7 +11236,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jmazza",
+      "portalPassword": "worker123"
     },
     {
       "id": 218,
@@ -10892,7 +11326,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "cmena",
+      "portalPassword": "worker123"
     },
     {
       "id": 219,
@@ -10932,7 +11368,9 @@
         "state": "NJ",
         "expires": "2028-05-07",
         "status": "Current"
-      }
+      },
+      "portalUsername": "rmendez",
+      "portalPassword": "worker123"
     },
     {
       "id": 220,
@@ -10958,7 +11396,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "emendozaargueta",
+      "portalPassword": "worker123"
     },
     {
       "id": 221,
@@ -10984,7 +11424,9 @@
         "state": "MI",
         "expires": "2026-01-02",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "cmerkel",
+      "portalPassword": "worker123"
     },
     {
       "id": 222,
@@ -11048,7 +11490,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mmirando",
+      "portalPassword": "worker123"
     },
     {
       "id": 223,
@@ -11080,7 +11524,9 @@
         "state": "NJ",
         "expires": "2026-10-16",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mmokienko",
+      "portalPassword": "worker123"
     },
     {
       "id": 224,
@@ -11120,7 +11566,9 @@
         "state": "MD",
         "expires": "2021-08-01",
         "status": "Expired"
-      }
+      },
+      "portalUsername": "dmonteiro",
+      "portalPassword": "worker123"
     },
     {
       "id": 225,
@@ -11172,7 +11620,9 @@
         "state": "NJ",
         "expires": "2027-11-13",
         "status": "Current"
-      }
+      },
+      "portalUsername": "apereira",
+      "portalPassword": "worker123"
     },
     {
       "id": 226,
@@ -11198,7 +11648,9 @@
         "state": "NJ",
         "expires": "2027-05-09",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dperkins",
+      "portalPassword": "worker123"
     },
     {
       "id": 227,
@@ -11269,7 +11721,9 @@
         "state": "PA",
         "expires": "2028-03-03",
         "status": "Current"
-      }
+      },
+      "portalUsername": "epfaff",
+      "portalPassword": "worker123"
     },
     {
       "id": 228,
@@ -11295,7 +11749,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jpizzuto",
+      "portalPassword": "worker123"
     },
     {
       "id": 229,
@@ -11321,7 +11777,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dposadas",
+      "portalPassword": "worker123"
     },
     {
       "id": 230,
@@ -11355,7 +11813,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "eposadasfunez",
+      "portalPassword": "worker123"
     },
     {
       "id": 231,
@@ -11423,7 +11883,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "mrios",
+      "portalPassword": "worker123"
     },
     {
       "id": 232,
@@ -11473,7 +11935,9 @@
         "state": "NY",
         "expires": "-",
         "status": "Current"
-      }
+      },
+      "portalUsername": "psamios",
+      "portalPassword": "worker123"
     },
     {
       "id": 233,
@@ -11517,7 +11981,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "rsantana",
+      "portalPassword": "worker123"
     },
     {
       "id": 234,
@@ -11569,7 +12035,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "fsilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 235,
@@ -11615,7 +12083,9 @@
         "state": "NJ",
         "expires": "2028-11-27",
         "status": "Current"
-      }
+      },
+      "portalUsername": "isilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 236,
@@ -11698,7 +12168,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "lsilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 237,
@@ -11781,7 +12253,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "tsilva",
+      "portalPassword": "worker123"
     },
     {
       "id": 238,
@@ -11800,7 +12274,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "fsilvariohernandez",
+      "portalPassword": "worker123"
     },
     {
       "id": 239,
@@ -11832,7 +12308,9 @@
         "state": "NJ Probationary",
         "expires": "2027-11-15",
         "status": "Current"
-      }
+      },
+      "portalUsername": "bsilvestre",
+      "portalPassword": "worker123"
     },
     {
       "id": 240,
@@ -11870,7 +12348,9 @@
         "state": "PA",
         "expires": "2029-06-17",
         "status": "Current"
-      }
+      },
+      "portalUsername": "dsiveter",
+      "portalPassword": "worker123"
     },
     {
       "id": 241,
@@ -11902,7 +12382,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jsoto",
+      "portalPassword": "worker123"
     },
     {
       "id": 242,
@@ -11988,7 +12470,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dsouto",
+      "portalPassword": "worker123"
     },
     {
       "id": 243,
@@ -12020,7 +12504,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "etamayo",
+      "portalPassword": "worker123"
     },
     {
       "id": 244,
@@ -12046,7 +12532,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "rterry",
+      "portalPassword": "worker123"
     },
     {
       "id": 245,
@@ -12084,7 +12572,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jtewes1",
+      "portalPassword": "worker123"
     },
     {
       "id": 246,
@@ -12155,7 +12645,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "dtoner",
+      "portalPassword": "worker123"
     },
     {
       "id": 247,
@@ -12181,7 +12673,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "jvascoii",
+      "portalPassword": "worker123"
     },
     {
       "id": 248,
@@ -12207,7 +12701,9 @@
         "state": "IL",
         "expires": "2029-09-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "mvelasquez1",
+      "portalPassword": "worker123"
     },
     {
       "id": 249,
@@ -12245,7 +12741,9 @@
         "state": "",
         "expires": "-",
         "status": "Needs Attention"
-      }
+      },
+      "portalUsername": "nwalz",
+      "portalPassword": "worker123"
     },
     {
       "id": 250,
@@ -12289,7 +12787,9 @@
         "state": "PA",
         "expires": "2026-08-20",
         "status": "Current"
-      }
+      },
+      "portalUsername": "nwhite",
+      "portalPassword": "worker123"
     }
   ],
   "jobs": [
