@@ -515,6 +515,38 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
   res.json({ ok: true, certName, fileDeleted });
 });
 
+app.post('/api/workers/:id/bloodwork', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const worker = (store.workers || []).find(w => w.id === id);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+  const body = req.body || {};
+  const record = {
+    testDate: String(body.testDate || '').trim(),
+    nextDue: String(body.nextDue || '').trim(),
+    bll: String(body.bll || '').trim(),
+    zpp: String(body.zpp || '').trim(),
+    status: String(body.status || 'Current').trim() || 'Current'
+  };
+
+  if (!record.testDate) {
+    return res.status(400).json({ error: 'Test date is required' });
+  }
+
+  worker.bloodwork = Array.isArray(worker.bloodwork) ? worker.bloodwork : [];
+  worker.bloodwork.unshift(record);
+  recomputeWorkerSummary(worker);
+
+  store.auditLog.unshift({
+    time: new Date().toLocaleTimeString(),
+    action: 'Added bloodwork',
+    detail: `${worker.name} · ${record.testDate || 'Bloodwork record'}`
+  });
+  writeStore(store);
+  res.json({ ok: true, rowIndex: 0, record });
+});
+
 app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
   const store = readStore();
   const id = Number(req.params.id);

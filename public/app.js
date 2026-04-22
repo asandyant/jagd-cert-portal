@@ -442,7 +442,10 @@ function selectedWorkerSection() {
           </div>
         </div>
         <div class="card">
-          <h2>Bloodwork</h2>
+          <div class="card-header">
+            <div><h2>Bloodwork</h2><div class="sub">Manage bloodwork records for this worker.</div></div>
+            <button class="btn dark" data-open-bloodwork-add="${worker.id}">Add Bloodwork</button>
+          </div>
           <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><span style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn light" data-edit-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Edit</button><button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button></span></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
         </div>
         <div class="card">
@@ -619,8 +622,47 @@ function certsView() {
 
 function bloodworkView() {
   return layout(`
-    <div class="card">
-      <div class="card-header"><div><h2>Bloodwork Management</h2><div class="sub">Track BLL / ZPP cycles and identify who needs action.</div></div></div>
+    <div class="card" id="bloodwork-add-form">
+      <div class="card-header">
+        <div><h2>Bloodwork Management</h2><div class="sub">Track BLL / ZPP cycles and identify who needs action.</div></div>
+        <button class="btn dark" id="saveBloodworkBtn">Add Bloodwork</button>
+      </div>
+      <div class="grid grid-3 section">
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Worker</div>
+          <select id="bloodworkWorkerId">
+            <option value="">Select worker</option>
+            ${state.workers.map(worker => `<option value="${worker.id}" ${String(state.selectedWorkerId || '') === String(worker.id) ? 'selected' : ''}>${worker.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Test Date</div>
+          <input id="bloodworkTestDate" type="date" />
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Next Due</div>
+          <input id="bloodworkNextDue" type="date" />
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">BLL</div>
+          <input id="bloodworkBLL" placeholder="BLL value" />
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">ZPP</div>
+          <input id="bloodworkZPP" placeholder="ZPP value" />
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Status</div>
+          <select id="bloodworkStatus">
+            ${['Current','Due Soon','Overdue','Needs Attention'].map(status => `<option value="${status}">${status}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="bloodworkAddStatus" class="small muted section"></div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header"><div><h2>Bloodwork Records</h2><div class="sub">Edit or delete existing bloodwork records below.</div></div></div>
       <div class="section table-wrap">
         <table>
           <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Action</th></tr></thead>
@@ -632,6 +674,7 @@ function bloodworkView() {
     </div>
   `);
 }
+
 
 
 function alertsView() {
@@ -1107,6 +1150,57 @@ function bindEvents() {
       if (workerSelect) workerSelect.value = btn.dataset.openOfficeUpload || '';
     });
   }));
+
+  document.querySelectorAll('[data-open-bloodwork-add]').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.dataset.openBloodworkAdd) state.selectedWorkerId = Number(btn.dataset.openBloodworkAdd);
+    state.view = 'bloodwork';
+    state.pendingScrollTarget = 'bloodwork-add-form';
+    render();
+  }));
+
+  document.getElementById('saveBloodworkBtn')?.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can add bloodwork records.');
+      return;
+    }
+    const statusEl = document.getElementById('bloodworkAddStatus');
+    if (statusEl) {
+      statusEl.textContent = 'Saving bloodwork record...';
+      statusEl.style.color = '';
+    }
+    const workerId = document.getElementById('bloodworkWorkerId')?.value;
+    const testDate = String(document.getElementById('bloodworkTestDate')?.value || '').trim();
+    const nextDue = String(document.getElementById('bloodworkNextDue')?.value || '').trim();
+    const bll = String(document.getElementById('bloodworkBLL')?.value || '').trim();
+    const zpp = String(document.getElementById('bloodworkZPP')?.value || '').trim();
+    const status = String(document.getElementById('bloodworkStatus')?.value || 'Current').trim();
+
+    if (!workerId) {
+      if (statusEl) { statusEl.textContent = 'Please select a worker.'; statusEl.style.color = '#991b1b'; }
+      return;
+    }
+    if (!testDate) {
+      if (statusEl) { statusEl.textContent = 'Please enter the test date.'; statusEl.style.color = '#991b1b'; }
+      return;
+    }
+
+    try {
+      await api(`/api/workers/${workerId}/bloodwork`, {
+        method: 'POST',
+        body: { testDate, nextDue, bll, zpp, status }
+      });
+      state.selectedWorkerId = Number(workerId);
+      await refreshData();
+      render();
+      window.alert('Bloodwork record added.');
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = err.message || 'Failed to add bloodwork record.';
+        statusEl.style.color = '#991b1b';
+      }
+    }
+  });
+
 
   document.querySelectorAll('[data-delete-upload]').forEach(btn => btn.addEventListener('click', async () => {
     if (state.user?.role !== 'Admin') {
