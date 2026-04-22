@@ -718,7 +718,8 @@ function alertsView() {
                 <div class="tag dark">${item.count || (item.items || []).length || 0} item(s)</div>
               </div>
               <div class="button-row" style="margin-top:12px;">
-                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">${selectedAlert && selectedAlert.key===item.key ? 'Viewing List' : 'Open List'}</button>
+                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">View List</button>
+                ${selectedAlert && selectedAlert.key===item.key ? `<span class="tag">Selected</span>` : ''}
               </div>
             </div>
           `).join('') : '<div class="muted">No active alerts right now.</div>'}
