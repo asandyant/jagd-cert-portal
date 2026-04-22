@@ -692,26 +692,54 @@ function bloodworkView() {
 function alertsView() {
   const alerts = liveAlerts();
   const selectedAlert = alerts.find(a => a.key === state.selectedAlertKey) || alerts[0] || null;
+  const selectedCount = selectedAlert ? (selectedAlert.count || (selectedAlert.items || []).length || 0) : 0;
   return layout(`
-    <div class="grid grid-2">
+    <div class="grid grid-2" id="alerts-top">
       <div class="card">
-        <div class="card-header"><div><h2>Alerts</h2><div class="sub">Current portal reminders and action items. (Action Center lives here)</div></div><div class="pill">${alerts.length} alert(s)</div></div>
+        <div class="card-header">
+          <div>
+            <h2>Alerts</h2>
+            <div class="sub">Current portal reminders and action items. This is the main office action center.</div>
+          </div>
+          <div class="pill">${alerts.length} active</div>
+        </div>
+        <div class="section" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="tag"><strong>Total Alerts</strong>: ${alerts.length}</div>
+          <div class="tag"><strong>Selected Alert Items</strong>: ${selectedCount}</div>
+        </div>
         <div class="section">
           ${alerts.length ? alerts.map(item => `
-            <div class="card" style="background:${item.type==='danger' ? '#fff1f2' : item.type==='warning' ? '#fffbeb' : '#eff6ff'}; box-shadow:none; margin-bottom:12px;">
-              <div style="font-weight:700;">${item.title}</div>
-              <div class="small muted" style="margin-top:8px;">${item.detail}</div>
-              <div class="button-row" style="margin-top:10px;">
-                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">Open List (${item.count || (item.items || []).length || 0})</button>
+            <div class="card" style="background:${item.type==='danger' ? '#fff1f2' : item.type==='warning' ? '#fffbeb' : '#eff6ff'}; box-shadow:none; margin-bottom:12px; border:1px solid rgba(15,23,42,.06);">
+              <div class="flex space-between wrap" style="align-items:flex-start;">
+                <div>
+                  <div style="font-weight:700;font-size:16px;">${item.title}</div>
+                  <div class="small muted" style="margin-top:8px;">${item.detail}</div>
+                </div>
+                <div class="tag dark">${item.count || (item.items || []).length || 0} item(s)</div>
+              </div>
+              <div class="button-row" style="margin-top:12px;">
+                <button class="btn ${selectedAlert && selectedAlert.key===item.key ? 'dark' : 'light'}" data-alert-open="${item.key}">${selectedAlert && selectedAlert.key===item.key ? 'Viewing List' : 'Open List'}</button>
               </div>
             </div>
           `).join('') : '<div class="muted">No active alerts right now.</div>'}
         </div>
       </div>
       <div class="card" id="alert-detail-section">
-        <div class="card-header"><div><h2>${selectedAlert ? selectedAlert.title : 'Alert Detail'}</h2><div class="sub">${selectedAlert ? 'Review the exact records behind this alert.' : 'Select an alert to view the list.'}</div></div></div>
+        <div class="card-header">
+          <div>
+            <h2>${selectedAlert ? selectedAlert.title : 'Alert Detail'}</h2>
+            <div class="sub">${selectedAlert ? 'Review the exact records behind this alert and use the actions below to move through the list.' : 'Select an alert to view the list.'}</div>
+          </div>
+          <button class="btn light" id="alertBackToTopBtn">Back to Top</button>
+        </div>
+        <div class="section" style="display:flex;gap:10px;flex-wrap:wrap;">
+          ${selectedAlert ? `<div class="tag"><strong>Scope</strong>: ${selectedAlert.scope || 'records'}</div><div class="tag"><strong>Items</strong>: ${selectedCount}</div>` : ''}
+        </div>
         <div class="section">${selectedAlert ? alertItemsTable(selectedAlert) : '<div class="muted">No alert selected.</div>'}</div>
-        <div class="section"><h3 style="margin:0 0 10px;">Reminder Rules</h3>${(state.admin?.reminderRules || []).map(r=>`<div class="tag"><strong>${r.label}</strong>: ${r.value}</div>`).join('')}</div>
+        <div class="section">
+          <h3 style="margin:0 0 10px;">Reminder Rules</h3>
+          ${(state.admin?.reminderRules || []).length ? (state.admin?.reminderRules || []).map(r=>`<div class="tag"><strong>${r.label}</strong>: ${r.value}</div>`).join('') : '<div class="muted">No reminder rules configured.</div>'}
+        </div>
       </div>
     </div>
   `);
@@ -1093,6 +1121,10 @@ function bindEvents() {
     state.pendingScrollTarget = 'alert-detail-section';
     render();
   }));
+
+  document.getElementById('alertBackToTopBtn')?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
 
   document.getElementById('jobSelector')?.addEventListener('change', async (e) => {
