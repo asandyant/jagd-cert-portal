@@ -419,9 +419,9 @@ function selectedWorkerSection() {
         </div>
         <div class="section table-wrap">
           <table>
-            <thead><tr><th>Certification</th><th>Status</th><th>Date</th><th>Document</th></tr></thead>
+            <thead><tr><th>Certification</th><th>Status</th><th>Date</th><th>Document</th><th>Action</th></tr></thead>
             <tbody>
-              ${worker.certifications.map(c=>`<tr><td>${c.name}</td><td>${badge(c.status)}</td><td>${c.date || '-'}</td><td>${String(c.document || '').startsWith('/uploads/') ? `<a href="${c.document}" target="_blank" class="link">Open File</a>` : (c.document || 'On file')}</td></tr>`).join('')}
+              ${worker.certifications.map(c=>`<tr><td>${c.name}</td><td>${badge(c.status)}</td><td>${c.date || '-'}</td><td>${String(c.document || '').startsWith('/uploads/') ? `<a href="${c.document}" target="_blank" class="link">Open File</a>` : (c.document || 'On file')}</td><td><button class="btn light" data-delete-cert="${worker.id}|${encodeURIComponent(c.name)}" style="padding:8px 12px;">Delete</button></td></tr>`).join('')}
             </tbody>
           </table>
         </div>
@@ -698,7 +698,14 @@ function uploadsView() {
       <div class="card">
         <div class="card-header"><div><h2>Current Upload Records</h2><div class="sub">This is the office intake queue.</div></div><div class="pill">${state.uploads.length} record(s)</div></div>
         <div class="section">
-          ${state.uploads.length ? state.uploads.map(u=>`<div class="tag"><strong>${u.file}</strong> · ${u.worker || 'Unassigned'}${u.certName ? ` · ${u.certName}` : ''}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''} · ${u.status}${u.originalFileName ? ` · Selected File ${u.originalFileName}` : ''}</div>`).join('') : '<div class="muted">No uploads yet.</div>'}
+          ${state.uploads.length ? state.uploads.map(u=>`
+            <div class="tag">
+              <strong>${u.file}</strong> · ${u.worker || 'Unassigned'}${u.certName ? ` · ${u.certName}` : ''}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''} · ${u.status}${u.originalFileName ? ` · Selected File ${u.originalFileName}` : ''}
+              <span style="display:inline-flex;gap:8px;align-items:center;margin-left:10px;">
+                ${u.filePath ? `<a href="${u.filePath}" target="_blank" class="link">Open File</a>` : ''}
+                <button class="btn light" data-delete-upload="${u.id}" style="padding:8px 12px;">Delete</button>
+              </span>
+            </div>`).join('') : '<div class="muted">No uploads yet.</div>'}
         </div>
       </div>
     </div>
@@ -1099,6 +1106,45 @@ function bindEvents() {
       const workerSelect = document.getElementById('uploadWorkerId');
       if (workerSelect) workerSelect.value = btn.dataset.openOfficeUpload || '';
     });
+  }));
+
+  document.querySelectorAll('[data-delete-upload]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can delete upload records.');
+      return;
+    }
+    const uploadId = btn.dataset.deleteUpload;
+    const confirmed = window.confirm('Delete this upload record? This also removes the uploaded file from storage when one exists.');
+    if (!confirmed) return;
+    try {
+      await api(`/api/uploads/${uploadId}?deleteFile=1`, { method: 'DELETE' });
+      await loadUploads();
+      if (state.selectedWorkerId) await loadWorkers();
+      render();
+      window.alert('Upload record deleted.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to delete upload record.');
+    }
+  }));
+
+  document.querySelectorAll('[data-delete-cert]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can delete certifications.');
+      return;
+    }
+    const [workerId, encodedName] = String(btn.dataset.deleteCert || '').split('|');
+    const certName = decodeURIComponent(encodedName || '');
+    const confirmed = window.confirm(`Delete the certification "${certName}" from this worker? If the cert file lives in portal uploads, that file will also be removed.`);
+    if (!confirmed) return;
+    try {
+      await api(`/api/workers/${workerId}/certifications`, { method: 'DELETE', body: { certName, deleteFile: true } });
+      await loadWorkers();
+      await loadUploads();
+      render();
+      window.alert('Certification deleted from worker profile.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to delete certification.');
+    }
   }));
 
   document.getElementById('employeeSearch')?.addEventListener('input', async (e) => {

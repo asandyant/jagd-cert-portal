@@ -216,6 +216,16 @@ function writeStore(store) {
   ensureStorageSetup();
   fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2));
 }
+function deleteUploadedFile(publicPath = '') {
+  const rel = String(publicPath || '').trim();
+  if (!rel.startsWith('/uploads/')) return false;
+  const fullPath = path.join(UPLOADS_DIR, path.basename(rel));
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+    return true;
+  }
+  return false;
+}
 function daysBetween(a, b) {
   return Math.floor((a - b) / (1000 * 60 * 60 * 24));
 }
@@ -477,6 +487,34 @@ app.put('/api/workers/:id', (req, res) => {
   res.json(store.workers[idx]);
 });
 
+app.delete('/api/workers/:id/certifications', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const worker = (store.workers || []).find(w => w.id === id);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+
+  const body = req.body || {};
+  const certName = String(body.certName || '').trim();
+  if (!certName) return res.status(400).json({ error: 'Certification name is required' });
+
+  const certIndex = (worker.certifications || []).findIndex(c => String(c.name || '').trim() === certName);
+  if (certIndex === -1) return res.status(404).json({ error: 'Certification not found' });
+
+  const cert = worker.certifications[certIndex];
+  let fileDeleted = false;
+  if (body.deleteFile) {
+    fileDeleted = deleteUploadedFile(cert.document || '');
+  }
+
+  worker.certifications.splice(certIndex, 1);
+  recomputeWorkerSummary(worker);
+
+  store.uploads = (store.uploads || []).filter(u => !(Number(u.workerId) === id && String(u.certName || '').trim() === certName));
+  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Deleted certification', detail: `${worker.name} · ${certName}` });
+  writeStore(store);
+  res.json({ ok: true, certName, fileDeleted });
+});
+
 app.get('/api/jobs', (req, res) => {
   const store = readStore();
   const search = String(req.query.search || '').toLowerCase();
@@ -630,6 +668,24 @@ app.post('/api/uploads', (req, res) => {
   store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Added upload', detail: `${upload.file} → ${upload.worker}` });
   writeStore(store);
   res.json(upload);
+});
+
+app.delete('/api/uploads/:id', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const idx = (store.uploads || []).findIndex(u => Number(u.id) === id);
+  if (idx === -1) return res.status(404).json({ error: 'Upload not found' });
+
+  const upload = store.uploads[idx];
+  let fileDeleted = false;
+  if (String(req.query.deleteFile || '') === '1') {
+    fileDeleted = deleteUploadedFile(upload.filePath || '');
+  }
+
+  store.uploads.splice(idx, 1);
+  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Deleted upload', detail: `${upload.file} → ${upload.worker}` });
+  writeStore(store);
+  res.json({ ok: true, id, fileDeleted });
 });
 
 app.get('/api/alerts', (req, res) => {
