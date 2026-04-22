@@ -453,6 +453,9 @@ function selectedWorkerSection() {
           <div class="section small">Class: <strong>${worker.driverLicense.class}</strong><br/>State: <strong>${worker.driverLicense.state || '-'}</strong><br/>Number: <strong>${worker.driverLicense.number}</strong><br/>Expires: <strong>${worker.driverLicense.expires}</strong><br/>Status: ${badge(worker.driverLicense.status)}</div>
         </div>
       </div>
+      <div class="section" style="display:flex;justify-content:flex-end;">
+        <button class="btn light" data-back-to-employee-list="1">Back to Top</button>
+      </div>
     </div>`;
 }
 
@@ -1155,6 +1158,12 @@ function bindEvents() {
     if (btn.dataset.openBloodworkAdd) state.selectedWorkerId = Number(btn.dataset.openBloodworkAdd);
     state.view = 'bloodwork';
     state.pendingScrollTarget = 'bloodwork-add-form';
+    render();
+  }));
+
+  document.querySelectorAll('[data-back-to-employee-list]').forEach(btn => btn.addEventListener('click', () => {
+    state.view = 'employees';
+    state.pendingScrollTarget = 'view-start';
     render();
   }));
 
