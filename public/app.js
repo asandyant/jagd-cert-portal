@@ -602,7 +602,7 @@ function certsView() {
           <tbody>
             ${state.certs.map(cert => `
               <tr>
-                <td><strong>${cert.name}</strong></td>
+                <td><span class="link" data-cert-name="${escapeHtml(cert.name)}" data-cert-scope="active-good"><strong>${cert.name}</strong></span></td>
                 <td><span class="link" data-cert-name="${escapeHtml(cert.name)}" data-cert-scope="active-good">${cert.activeGood ?? 0}</span></td>
                 <td><span class="link" data-cert-name="${escapeHtml(cert.name)}" data-cert-scope="active-attention">${cert.activeNeedsAttention ?? 0}</span></td>
                 <td>${cert.jobsRequired.length ? cert.jobsRequired.map(j => `<span class="tag">${j}</span>`).join('') : '<span class="muted">No jobs yet</span>'}</td>
