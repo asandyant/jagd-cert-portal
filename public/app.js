@@ -743,7 +743,7 @@ function uploadsView() {
             </select>
             <input id="uploadNotes" placeholder="Notes" />
           </div>
-          <div class="small muted" style="margin-top:10px;">Office note: use the date field for the certification expiration date.</div>
+          <div class="small muted" style="margin-top:10px;">Office note: use the date field for the certification expiration date. If the cert is missing from the dropdown, leave it blank and use Record Name as the certification name.</div>
           <div class="section"><button class="btn dark" id="saveUploadBtn">Add Upload Record</button></div>
         </div>
       </div>
@@ -1027,9 +1027,10 @@ function bindEvents() {
     }
     try {
       const pickedFile = document.getElementById('workerUploadFilePicker')?.files?.[0];
-      const certName = document.getElementById('workerUploadCertName').value;
-      const recordName = document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload';
-      if (!certName) throw new Error('Please select the certification you are uploading.');
+      const selectedCertName = String(document.getElementById('workerUploadCertName').value || '').trim();
+      const recordName = String(document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload').trim();
+      const certName = selectedCertName || recordName;
+      if (!certName) throw new Error('Please select a certification or enter a record name.');
       if (!pickedFile) throw new Error('Please choose a PDF or image file before submitting.');
       let fileData = '';
       fileData = await new Promise((resolve, reject) => {
@@ -1381,9 +1382,10 @@ function bindEvents() {
   document.getElementById('saveUploadBtn')?.addEventListener('click', async () => {
     const workerId = document.getElementById('uploadWorkerId').value;
     const worker = state.workers.find(w => String(w.id) === String(workerId));
-    const certName = document.getElementById('uploadCertName').value;
+    const selectedCertName = String(document.getElementById('uploadCertName').value || '').trim();
     const pickedFile = document.getElementById('uploadFilePicker')?.files?.[0];
-    const recordName = document.getElementById('uploadFileName').value || pickedFile?.name || 'Untitled Upload';
+    const recordName = String(document.getElementById('uploadFileName').value || pickedFile?.name || 'Untitled Upload').trim();
+    const certName = selectedCertName || recordName;
 
     if (!workerId) {
       const proceed = window.confirm('No worker is assigned to this upload. Are you sure you want to continue?');
@@ -1391,8 +1393,8 @@ function bindEvents() {
     }
 
     if (!certName) {
-      const proceed = window.confirm('No certification is assigned to this upload. Are you sure you want to continue?');
-      if (!proceed) return;
+      window.alert('Please select a certification or enter a record name.');
+      return;
     }
 
     let fileData = '';
@@ -1421,6 +1423,9 @@ function bindEvents() {
     });
     await refreshData();
     render();
+    if (!selectedCertName && recordName) {
+      window.alert(`Certification not found in dropdown. Saved using custom certification name: ${recordName}`);
+    }
   });
 
 
