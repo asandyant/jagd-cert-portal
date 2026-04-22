@@ -515,6 +515,42 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
   res.json({ ok: true, certName, fileDeleted });
 });
 
+app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const rowIndex = Number(req.params.rowIndex);
+  const worker = (store.workers || []).find(w => w.id === id);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+  if (!Array.isArray(worker.bloodwork) || worker.bloodwork.length === 0) {
+    return res.status(404).json({ error: 'Bloodwork record not found' });
+  }
+  if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= worker.bloodwork.length) {
+    return res.status(404).json({ error: 'Bloodwork record not found' });
+  }
+
+  const body = req.body || {};
+  const current = worker.bloodwork[rowIndex] || {};
+  const updated = {
+    ...current,
+    testDate: body.testDate ?? current.testDate,
+    nextDue: body.nextDue ?? current.nextDue,
+    bll: body.bll ?? current.bll,
+    zpp: body.zpp ?? current.zpp,
+    status: body.status ?? current.status
+  };
+
+  worker.bloodwork[rowIndex] = updated;
+  recomputeWorkerSummary(worker);
+
+  store.auditLog.unshift({
+    time: new Date().toLocaleTimeString(),
+    action: 'Updated bloodwork',
+    detail: `${worker.name} · ${updated.testDate || 'Bloodwork record'}`
+  });
+  writeStore(store);
+  res.json({ ok: true, rowIndex, record: updated });
+});
+
 app.delete('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
   const store = readStore();
   const id = Number(req.params.id);

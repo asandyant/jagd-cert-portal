@@ -443,7 +443,7 @@ function selectedWorkerSection() {
         </div>
         <div class="card">
           <h2>Bloodwork</h2>
-          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
+          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><span style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn light" data-edit-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Edit</button><button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button></span></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
         </div>
         <div class="card">
           <h2>Driver License</h2>
@@ -625,7 +625,7 @@ function bloodworkView() {
         <table>
           <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
-            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td><td><button class="btn light" data-delete-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Delete</button></td></tr>`).join('')}
+            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td><td><div class="button-row"><button class="btn light" data-edit-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Edit</button><button class="btn light" data-delete-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Delete</button></div></td></tr>`).join('')}
           </tbody>
         </table>
       </div>
@@ -1142,6 +1142,49 @@ function bindEvents() {
       window.alert('Certification deleted from worker profile.');
     } catch (err) {
       window.alert(err.message || 'Failed to delete certification.');
+    }
+  }));
+
+  document.querySelectorAll('[data-edit-bloodwork]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can edit bloodwork records.');
+      return;
+    }
+    const [workerId, rowIndex] = String(btn.dataset.editBloodwork || '').split('|');
+    const worker = state.workers.find(w => String(w.id) === String(workerId));
+    const bloodworkRow = worker?.bloodwork?.[Number(rowIndex)] || state.bloodwork.find(r => String(r.workerId) === String(workerId) && String(r.rowIndex) === String(rowIndex));
+    if (!bloodworkRow) {
+      window.alert('Bloodwork record not found.');
+      return;
+    }
+
+    const testDate = window.prompt('Edit Test Date (YYYY-MM-DD):', bloodworkRow.testDate || '');
+    if (testDate === null) return;
+    const nextDue = window.prompt('Edit Next Due (YYYY-MM-DD):', bloodworkRow.nextDue || '');
+    if (nextDue === null) return;
+    const bll = window.prompt('Edit BLL:', String(bloodworkRow.bll ?? ''));
+    if (bll === null) return;
+    const zpp = window.prompt('Edit ZPP:', String(bloodworkRow.zpp ?? ''));
+    if (zpp === null) return;
+    const status = window.prompt('Edit Status (Current, Due Soon, Overdue, Needs Attention):', bloodworkRow.status || 'Current');
+    if (status === null) return;
+
+    try {
+      await api(`/api/workers/${workerId}/bloodwork/${rowIndex}`, {
+        method: 'PUT',
+        body: {
+          testDate: String(testDate || '').trim(),
+          nextDue: String(nextDue || '').trim(),
+          bll: String(bll || '').trim(),
+          zpp: String(zpp || '').trim(),
+          status: String(status || '').trim()
+        }
+      });
+      await refreshData();
+      render();
+      window.alert('Bloodwork record updated.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to update bloodwork record.');
     }
   }));
 
