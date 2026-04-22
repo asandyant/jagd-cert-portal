@@ -391,7 +391,13 @@ function selectedWorkerSection() {
   return `
     <div class="grid grid-2 section" id="selected-worker-profile">
       <div class="card">
-        <div class="card-header"><div><h2>Worker Profile</h2><div class="sub">${worker.name}</div></div><div>${badge(worker.status)}</div></div>
+        <div class="card-header">
+          <div>
+            <div class="small muted">Worker Profile</div>
+            <div style="font-size:32px;font-weight:800;line-height:1.1;margin-top:6px;">${worker.name}</div>
+          </div>
+          <div>${badge(worker.status)}</div>
+        </div>
         <div class="grid grid-3 section">
           <div class="card" style="background:#f8fafc;box-shadow:none;"><div class="small muted">Current Job</div>
           <div style="margin-top:6px;">
@@ -421,6 +427,20 @@ function selectedWorkerSection() {
         </div>
       </div>
       <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Upload Certification</h2>
+              <div class="sub">Open the intake queue with this worker selected for the next upload.</div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="tag"><strong>${worker.name}</strong> · ${worker.portalUsername || 'Worker portal active'}</div>
+          </div>
+          <div class="button-row section">
+            <button class="btn dark" data-open-office-upload="${worker.id}">Open Upload Intake Queue</button>
+          </div>
+        </div>
         <div class="card">
           <h2>Bloodwork</h2>
           <div class="section">${worker.bloodwork.length ? worker.bloodwork.map(b=>`<div class="tag">${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
@@ -1070,6 +1090,16 @@ function bindEvents() {
     await refreshData();
     render();
   });
+
+  document.querySelectorAll('[data-open-office-upload]').forEach(btn => btn.addEventListener('click', () => {
+    state.view = 'uploads';
+    state.pendingScrollTarget = 'view-start';
+    render();
+    requestAnimationFrame(() => {
+      const workerSelect = document.getElementById('uploadWorkerId');
+      if (workerSelect) workerSelect.value = btn.dataset.openOfficeUpload || '';
+    });
+  }));
 
   document.getElementById('employeeSearch')?.addEventListener('input', async (e) => {
     state.employeeSearch = e.target.value;
