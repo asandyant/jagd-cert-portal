@@ -443,7 +443,7 @@ function selectedWorkerSection() {
         </div>
         <div class="card">
           <h2>Bloodwork</h2>
-          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map(b=>`<div class="tag">${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
+          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
         </div>
         <div class="card">
           <h2>Driver License</h2>
@@ -623,9 +623,9 @@ function bloodworkView() {
       <div class="card-header"><div><h2>Bloodwork Management</h2><div class="sub">Track BLL / ZPP cycles and identify who needs action.</div></div></div>
       <div class="section table-wrap">
         <table>
-          <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th></tr></thead>
+          <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
-            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td></tr>`).join('')}
+            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td><td><button class="btn light" data-delete-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Delete</button></td></tr>`).join('')}
           </tbody>
         </table>
       </div>
@@ -1142,6 +1142,24 @@ function bindEvents() {
       window.alert('Certification deleted from worker profile.');
     } catch (err) {
       window.alert(err.message || 'Failed to delete certification.');
+    }
+  }));
+
+  document.querySelectorAll('[data-delete-bloodwork]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can delete bloodwork records.');
+      return;
+    }
+    const [workerId, rowIndex] = String(btn.dataset.deleteBloodwork || '').split('|');
+    const confirmed = window.confirm('Delete this bloodwork record? This cannot be undone.');
+    if (!confirmed) return;
+    try {
+      await api(`/api/workers/${workerId}/bloodwork/${rowIndex}`, { method: 'DELETE' });
+      await refreshData();
+      render();
+      window.alert('Bloodwork record deleted.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to delete bloodwork record.');
     }
   }));
 

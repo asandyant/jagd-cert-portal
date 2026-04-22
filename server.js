@@ -515,6 +515,31 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
   res.json({ ok: true, certName, fileDeleted });
 });
 
+app.delete('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
+  const store = readStore();
+  const id = Number(req.params.id);
+  const rowIndex = Number(req.params.rowIndex);
+  const worker = (store.workers || []).find(w => w.id === id);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+  if (!Array.isArray(worker.bloodwork) || worker.bloodwork.length === 0) {
+    return res.status(404).json({ error: 'Bloodwork record not found' });
+  }
+  if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= worker.bloodwork.length) {
+    return res.status(404).json({ error: 'Bloodwork record not found' });
+  }
+
+  const removed = worker.bloodwork.splice(rowIndex, 1)[0];
+  recomputeWorkerSummary(worker);
+
+  store.auditLog.unshift({
+    time: new Date().toLocaleTimeString(),
+    action: 'Deleted bloodwork',
+    detail: `${worker.name} · ${removed.testDate || 'Bloodwork record'}`
+  });
+  writeStore(store);
+  res.json({ ok: true, rowIndex, removed });
+});
+
 app.get('/api/jobs', (req, res) => {
   const store = readStore();
   const search = String(req.query.search || '').toLowerCase();
@@ -592,9 +617,9 @@ app.get('/api/bloodwork', (req, res) => {
   const store = readStore();
   const rows = [];
   for (const worker of store.workers || []) {
-    for (const row of worker.bloodwork || []) {
-      rows.push({ workerId: worker.id, workerName: worker.name, ...row });
-    }
+    (worker.bloodwork || []).forEach((row, rowIndex) => {
+      rows.push({ workerId: worker.id, workerName: worker.name, rowIndex, ...row });
+    });
   }
   rows.sort((a,b) => String(b.nextDue).localeCompare(String(a.nextDue)));
   res.json(rows);
