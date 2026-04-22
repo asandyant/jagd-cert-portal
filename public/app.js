@@ -453,8 +453,8 @@ function selectedWorkerSection() {
           <div class="section small">Class: <strong>${worker.driverLicense.class}</strong><br/>State: <strong>${worker.driverLicense.state || '-'}</strong><br/>Number: <strong>${worker.driverLicense.number}</strong><br/>Expires: <strong>${worker.driverLicense.expires}</strong><br/>Status: ${badge(worker.driverLicense.status)}</div>
         </div>
       </div>
-      <div class="section" style="display:flex;justify-content:flex-end;">
-        <button class="btn light" data-back-to-employee-list="1">Back to Top</button>
+      <div class="section" style="display:flex;justify-content:center;">
+        <button class="btn light" data-back-to-top="employees-top">Back to Top</button>
       </div>
     </div>`;
 }
@@ -589,7 +589,10 @@ function certsView() {
     <div class="card">
       <div class="card-header">
         <div><h2>Certs</h2><div class="sub">Built from the worker summary sheet so office can see every tracked certification in one place.</div></div>
-        <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
+        <div class="right-note">
+          <button class="btn dark" data-open-cert-upload="">Add / Upload Certification</button>
+          <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
+        </div>
       </div>
       <div class="section table-wrap">
         <table>
@@ -612,9 +615,12 @@ function certsView() {
       <div class="card section" id="cert-worker-list">
         <div class="card-header">
           <div><h2>${selectedCert.name}</h2><div class="sub">Click a worker to open the full profile.</div></div>
-          <div class="button-row cert-scope-grid">
+          <div class="right-note">
+            <button class="btn dark" data-open-cert-upload="${escapeHtml(selectedCert.name)}">Upload This Certification</button>
+            <div class="button-row cert-scope-grid">
             <button class="btn ${state.selectedCertScope==='active-good'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-good">Active Good (${selectedCert.activeGood ?? 0})</button>
             <button class="btn ${state.selectedCertScope==='active-attention'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-attention">Active Needs Attention (${selectedCert.activeNeedsAttention ?? 0})</button>
+          </div>
           </div>
         </div>
         <div class="section">${certWorkerTable(selectedItems)}</div>
@@ -1154,16 +1160,25 @@ function bindEvents() {
     });
   }));
 
+  document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEventListener('click', () => {
+    state.view = 'uploads';
+    state.pendingScrollTarget = 'view-start';
+    const certName = btn.dataset.openCertUpload || '';
+    render();
+    requestAnimationFrame(() => {
+      const certSelect = document.getElementById('uploadCertName');
+      if (certSelect && certName) certSelect.value = certName;
+    });
+  }));
+
+  document.querySelectorAll('[data-back-to-top]').forEach(btn => btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+
   document.querySelectorAll('[data-open-bloodwork-add]').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.openBloodworkAdd) state.selectedWorkerId = Number(btn.dataset.openBloodworkAdd);
     state.view = 'bloodwork';
     state.pendingScrollTarget = 'bloodwork-add-form';
-    render();
-  }));
-
-  document.querySelectorAll('[data-back-to-employee-list]').forEach(btn => btn.addEventListener('click', () => {
-    state.view = 'employees';
-    state.pendingScrollTarget = 'view-start';
     render();
   }));
 
