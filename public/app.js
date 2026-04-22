@@ -417,7 +417,8 @@ function selectedWorkerSection() {
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
           <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
         </div>
-        <div class="section table-wrap">
+        <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
+      <div class="section table-wrap">
           <table>
             <thead><tr><th>Certification</th><th>Status</th><th>Date</th><th>Document</th><th>Action</th></tr></thead>
             <tbody>
@@ -591,6 +592,7 @@ function certsView() {
         <div><h2>Certs</h2><div class="sub">Built from the worker summary sheet so office can see every tracked certification in one place.</div></div>
         <div class="right-note">
           <button class="btn dark" data-open-cert-upload="">Add / Upload Certification</button>
+          <button class="btn light" id="openAddCertDropdownBtn">Add Certification to Dropdown</button>
           <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
         </div>
       </div>
@@ -1161,7 +1163,30 @@ function bindEvents() {
     });
   }));
 
-  document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEventListener('click', () => {
+  
+  document.getElementById('openAddCertDropdownBtn')?.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can add certifications to the dropdown.');
+      return;
+    }
+    const name = String(window.prompt('Add Certification to Dropdown\n\nCertification name:', '') || '').trim();
+    if (!name) return;
+    const alias = String(window.prompt('Optional alias/source names (comma separated):', '') || '').trim();
+    try {
+      const result = await api('/api/certs/catalog', { method: 'POST', body: { name, alias } });
+      await refreshData();
+      if (!state.selectedCertName || state.selectedCertName === name || !state.certs.some(c => c.name === state.selectedCertName)) {
+        state.selectedCertName = result.name || name;
+      }
+      state.view = 'certs';
+      render();
+      window.alert(result.message || 'Certification added to dropdown.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to add certification to dropdown.');
+    }
+  });
+
+document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEventListener('click', () => {
     state.view = 'uploads';
     state.pendingScrollTarget = 'view-start';
     const certName = btn.dataset.openCertUpload || '';

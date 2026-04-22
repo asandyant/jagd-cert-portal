@@ -40,6 +40,35 @@ const CERT_CATALOG = [
   { name: 'BLL / ZPP Current', aliases: ['BLL / ZPP Current'] }
 ];
 
+function normalizeCertName(value = '') {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function getDynamicCertCatalog(store) {
+  return (store.certCatalog || []).map(entry => ({
+    name: normalizeCertName(entry.name),
+    aliases: [...new Set([normalizeCertName(entry.name), ...((entry.aliases || []).map(normalizeCertName))].filter(Boolean))]
+  })).filter(entry => entry.name);
+}
+
+function getCombinedCertCatalog(store) {
+  const merged = new Map();
+  [...CERT_CATALOG, ...getDynamicCertCatalog(store)].forEach(entry => {
+    const name = normalizeCertName(entry.name);
+    if (!name) return;
+    const aliases = [...new Set([name, ...((entry.aliases || []).map(normalizeCertName))].filter(Boolean))];
+    if (merged.has(name)) {
+      const existing = merged.get(name);
+      existing.aliases = [...new Set([...(existing.aliases || []), ...aliases])];
+    } else {
+      merged.set(name, { name, aliases });
+    }
+  });
+  return Array.from(merged.values());
+}
+
+
+
 
 function makeWorkerPortalUsername(worker, used = new Set()) {
   const first = String(worker.firstName || '').trim().toLowerCase();
@@ -198,6 +227,10 @@ function recomputeWorkerSummary(worker) {
 function readStore() {
   ensureStorageSetup();
   const store = JSON.parse(fs.readFileSync(STORE_PATH, 'utf8'));
+  if (!Array.isArray(store.certCatalog)) {
+    store.certCatalog = [];
+    writeStore(store);
+  }
   if (store.workers) {
     let changed = false;
     store.workers = store.workers.map((worker, index) => {
@@ -788,8 +821,45 @@ app.get('/api/alerts', (req, res) => {
 
 app.get('/api/certs', (req, res) => {
   const store = readStore();
-  const rows = CERT_CATALOG.map(entry => certCatalogRow(store, entry));
-  res.json({ certs: rows, workbookSource: 'Worker Summary Sheet 2026.xlsx', note: 'Certification catalog built from the worker summary sheet columns plus portal aliases.' });
+  const catalog = getCombinedCertCatalog(store);
+  const rows = catalog.map(entry => certCatalogRow(store, entry));
+  res.json({
+    certs: rows,
+    workbookSource: 'Worker Summary Sheet 2026.xlsx',
+    note: 'Certification catalog built from the worker summary sheet columns plus portal aliases.',
+    dynamicCount: (store.certCatalog || []).length
+  });
+});
+
+app.post('/api/certs/catalog', (req, res) => {
+  const store = readStore();
+  const name = normalizeCertName(req.body?.name);
+  const aliasText = String(req.body?.alias || '').trim();
+  if (!name) {
+    return res.status(400).send('Certification name is required.');
+  }
+
+  const combined = getCombinedCertCatalog(store);
+  const existing = combined.find(entry =>
+    normalizeCertName(entry.name).toLowerCase() === name.toLowerCase() ||
+    (entry.aliases || []).some(alias => normalizeCertName(alias).toLowerCase() === name.toLowerCase())
+  );
+
+  if (existing) {
+    return res.json({ ok: true, added: false, name: existing.name, message: 'Certification already exists in the dropdown.' });
+  }
+
+  const aliases = [...new Set([name, ...aliasText.split(',').map(normalizeCertName).filter(Boolean)])];
+  store.certCatalog = Array.isArray(store.certCatalog) ? store.certCatalog : [];
+  store.certCatalog.push({ name, aliases });
+  store.auditLog = store.auditLog || [];
+  store.auditLog.unshift({
+    time: new Date().toLocaleTimeString(),
+    action: 'Added certification to dropdown',
+    detail: aliasText ? `${name} (aliases: ${aliasText})` : name
+  });
+  writeStore(store);
+  res.json({ ok: true, added: true, name, aliases });
 });
 
 
