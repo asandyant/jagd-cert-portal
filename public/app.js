@@ -469,7 +469,7 @@ function workerPortalView() {
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue.</div></div></div>
+            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue. Choose the certification and file before submitting.</div></div></div>
             <div class="section grid grid-2">
               <input id="workerUploadFileName" placeholder="Record name (example: Fit_Test.pdf)" />
               <input id="workerUploadFilePicker" type="file" accept=".pdf,image/*" />
@@ -484,7 +484,7 @@ function workerPortalView() {
                 <div class="small muted" style="margin-bottom:6px;">Expiration Date</div>
                 <input id="workerUploadExpirationDate" type="date" />
               </div>
-              <input id="workerUploadNotes" placeholder="Notes" />
+              <input id="workerUploadNotes" placeholder="Notes for office review (optional)" />
             </div>
             <div class="section button-row">
               <button class="btn dark" id="workerUploadBtn">Submit Certification Upload</button>
@@ -942,21 +942,23 @@ function bindEvents() {
 
   document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
-    if (status) status.textContent = 'Uploading...';
+    if (status) {
+      status.textContent = 'Submitting certification upload...';
+      status.className = 'small muted';
+    }
     try {
       const pickedFile = document.getElementById('workerUploadFilePicker')?.files?.[0];
       const certName = document.getElementById('workerUploadCertName').value;
       const recordName = document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload';
-      if (!certName) throw new Error('Please select a certification.');
+      if (!certName) throw new Error('Please select the certification you are uploading.');
+      if (!pickedFile) throw new Error('Please choose a PDF or image file before submitting.');
       let fileData = '';
-      if (pickedFile) {
-        fileData = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result || '');
-          reader.onerror = () => reject(new Error('File read failed'));
-          reader.readAsDataURL(pickedFile);
-        });
-      }
+      fileData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result || '');
+        reader.onerror = () => reject(new Error('We could not read that file. Please try again.'));
+        reader.readAsDataURL(pickedFile);
+      });
       await api('/api/uploads', {
         method: 'POST',
         body: {
@@ -971,11 +973,19 @@ function bindEvents() {
           notes: document.getElementById('workerUploadNotes').value
         }
       });
-      if (status) status.textContent = 'Upload submitted.';
+      if (status) {
+        status.textContent = 'Upload submitted to office review queue.';
+        status.className = 'small';
+        status.style.color = '#166534';
+      }
       await refreshData();
       render();
     } catch (e) {
-      if (status) status.textContent = e.message || 'Upload failed.';
+      if (status) {
+        status.textContent = e.message || 'Upload failed. Please try again.';
+        status.className = 'small';
+        status.style.color = '#991b1b';
+      }
     }
   });
 
