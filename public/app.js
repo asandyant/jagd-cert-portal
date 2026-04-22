@@ -469,17 +469,6 @@ function workerPortalView() {
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div><h2>My Bloodwork</h2><div class="sub">Your current bloodwork records.</div></div></div>
-            <div class="section">${(worker.bloodwork || []).length ? worker.bloodwork.map(b => `<div class="tag">${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
-          </div>
-        </div>
-
-        <div class="grid grid-2 section">
-          <div class="card">
-            <div class="card-header"><div><h2>My Alerts</h2><div class="sub">Only your own records show here.</div></div></div>
-            <div class="section">${(payload.alerts || []).length ? payload.alerts.map(a => `<div class="tag"><strong>${a.title}</strong>: ${a.detail}</div>`).join('') : '<div class="muted">No active alerts right now.</div>'}</div>
-          </div>
-          <div class="card">
             <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue.</div></div></div>
             <div class="section grid grid-2">
               <input id="workerUploadFileName" placeholder="Record name (example: Fit_Test.pdf)" />
@@ -501,6 +490,17 @@ function workerPortalView() {
               <button class="btn dark" id="workerUploadBtn">Submit Certification Upload</button>
               <div id="workerUploadStatus" class="small muted"></div>
             </div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 section">
+          <div class="card">
+            <div class="card-header"><div><h2>My Bloodwork</h2><div class="sub">Your current bloodwork records.</div></div></div>
+            <div class="section">${(worker.bloodwork || []).length ? worker.bloodwork.map(b => `<div class="tag">${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><h2>My Alerts</h2><div class="sub">Only your own records show here.</div></div></div>
+            <div class="section">${(payload.alerts || []).length ? payload.alerts.map(a => `<div class="tag"><strong>${a.title}</strong>: ${a.detail}</div>`).join('') : '<div class="muted">No active alerts right now.</div>'}</div>
           </div>
         </div>
 

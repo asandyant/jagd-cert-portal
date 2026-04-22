@@ -4,7 +4,7 @@
 .container{max-width:1400px;margin:0 auto;padding:24px}
 .hero{background:var(--dark);color:#fff;border-radius:28px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.25)}
 .hero-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
-.pill{display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:8px 12px;border-radius:999px;font-size:12px}
+.pill{display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:10px 16px;border-radius:999px;font-size:18px;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:18px}
 .stat{background:rgba(255,255,255,.08);padding:14px;border-radius:18px}
 .stat .label{font-size:12px;color:#cbd5e1}.stat .value{font-size:28px;font-weight:700;margin-top:4px}
