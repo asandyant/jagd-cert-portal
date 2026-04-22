@@ -136,6 +136,7 @@ function certCatalogRow(store, entry) {
   const totalWorkers = store.workers || [];
   const jobsRequired = (store.jobs || []).filter(job => (job.requirements || []).some(req => entry.aliases.includes(req))).map(job => job.name);
   const uniqueAliases = [...new Set(entry.aliases.map(a => String(a).replace(/\s+/g, ' ').trim()).filter(Boolean))];
+  const dynamicNames = new Set(getDynamicCertCatalog(store).map(item => normalizeCertName(item.name).toLowerCase()));
 
   const mapWorkers = (items, wantedState = null) => items
     .filter(worker => {
@@ -151,6 +152,7 @@ function certCatalogRow(store, entry) {
     name: entry.name,
     aliases: uniqueAliases,
     jobsRequired,
+    isDynamic: dynamicNames.has(normalizeCertName(entry.name).toLowerCase()),
     activeGood: activeGoodWorkerList.length,
     activeNeedsAttention: activeNeedsAttentionWorkerList.length,
     activeGoodWorkerList,
@@ -860,6 +862,31 @@ app.post('/api/certs/catalog', (req, res) => {
   });
   writeStore(store);
   res.json({ ok: true, added: true, name, aliases });
+});
+
+app.delete('/api/certs/catalog', (req, res) => {
+  const store = readStore();
+  const name = normalizeCertName(req.body?.name);
+  if (!name) {
+    return res.status(400).send('Certification name is required.');
+  }
+
+  store.certCatalog = Array.isArray(store.certCatalog) ? store.certCatalog : [];
+  const before = store.certCatalog.length;
+  store.certCatalog = store.certCatalog.filter(entry => normalizeCertName(entry.name).toLowerCase() !== name.toLowerCase());
+
+  if (store.certCatalog.length === before) {
+    return res.status(404).send('Certification was not found in the dropdown-only list. Built-in certifications cannot be deleted here.');
+  }
+
+  store.auditLog = store.auditLog || [];
+  store.auditLog.unshift({
+    time: new Date().toLocaleTimeString(),
+    action: 'Deleted certification from dropdown',
+    detail: name
+  });
+  writeStore(store);
+  res.json({ ok: true, deleted: true, name, message: 'Certification removed from the dropdown. Existing worker records and upload history were not changed.' });
 });
 
 

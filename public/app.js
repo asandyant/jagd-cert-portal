@@ -619,6 +619,7 @@ function certsView() {
           <div><h2>${selectedCert.name}</h2><div class="sub">Click a worker to open the full profile.</div></div>
           <div class="right-note">
             <button class="btn dark" data-open-cert-upload="${escapeHtml(selectedCert.name)}">Upload This Certification</button>
+            ${selectedCert.isDynamic ? `<button class="btn light" data-delete-dropdown-cert="${escapeHtml(selectedCert.name)}">Delete from Dropdown</button>` : ''}
             <div class="button-row cert-scope-grid">
             <button class="btn ${state.selectedCertScope==='active-good'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-good">Active Good (${selectedCert.activeGood ?? 0})</button>
             <button class="btn ${state.selectedCertScope==='active-attention'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-attention">Active Needs Attention (${selectedCert.activeNeedsAttention ?? 0})</button>
@@ -1185,6 +1186,29 @@ function bindEvents() {
       window.alert(err.message || 'Failed to add certification to dropdown.');
     }
   });
+
+  document.querySelectorAll('[data-delete-dropdown-cert]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can delete certifications from the dropdown.');
+      return;
+    }
+    const certName = String(btn.dataset.deleteDropdownCert || '').trim();
+    if (!certName) return;
+    const confirmed = window.confirm(`Delete "${certName}" from the dropdown? This action cannot be undone. Existing worker records and upload history will not be changed.`);
+    if (!confirmed) return;
+    try {
+      const result = await api('/api/certs/catalog', { method: 'DELETE', body: { name: certName } });
+      await refreshData();
+      if (state.selectedCertName === certName) {
+        state.selectedCertName = state.certs[0]?.name || null;
+      }
+      state.view = 'certs';
+      render();
+      window.alert(result.message || 'Certification removed from the dropdown.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to delete certification from the dropdown.');
+    }
+  }));
 
 document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEventListener('click', () => {
     state.view = 'uploads';
