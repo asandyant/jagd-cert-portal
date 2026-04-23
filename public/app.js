@@ -173,10 +173,10 @@ function layout(content) {
     ['admin', 'Admin']
   ];
   const visibleNav = navItems.filter(([id]) => {
-    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','history','reports'].includes(id);
-    if (state.user?.role === 'Office') return id !== 'access';
+    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','alerts','history','reports','uploads'].includes(id);
+    if (state.user?.role === 'Office') return ['dashboard','employees','jobs','certs','bloodwork','alerts','uploads','history','reports'].includes(id);
     if (state.user?.role === 'Admin') return true;
-    return id !== 'access';
+    return id !== 'access' && id !== 'admin';
   });
   return `
     <div class="container">
@@ -188,7 +188,6 @@ function layout(content) {
           </div>
           <div class="right-note">
             <span class="pill">Role: ${state.user?.role || '-'}</span>
-            ${state.user && state.user.role !== 'Worker' ? '<button class="btn light" id="changeMyPasswordBtn">Change My Password</button>' : ''}
             <button class="btn light" id="logoutBtn">Log Out</button>
           </div>
         </div>
@@ -267,6 +266,27 @@ function loginView() {
 }
 
 
+
+function canManageBloodwork() {
+  return ['Admin', 'Office'].includes(String(state.user?.role || ''));
+}
+
+function canDeleteRecords() {
+  return String(state.user?.role || '') === 'Admin';
+}
+
+function canManageJobs() {
+  return String(state.user?.role || '') === 'Admin';
+}
+
+function canManageWorkers() {
+  return String(state.user?.role || '') === 'Admin';
+}
+
+function canViewAdmin() {
+  return String(state.user?.role || '') === 'Admin';
+}
+
 function currentJobDisplay(worker) {
   if ((worker.employmentStatus || 'Active') !== 'Active') return '-';
   return worker.currentJob || worker.assignedJob || (Array.isArray(worker.jobsReady) && worker.jobsReady.length ? worker.jobsReady[0] : worker.crew || '-');
@@ -274,7 +294,7 @@ function currentJobDisplay(worker) {
 
 function workerTable(items, options = {}) {
   if (!items.length) return `<div class="card">No workers found.</div>`;
-  const showEmploymentToggle = !!options.showEmploymentToggle;
+  const showEmploymentToggle = !!options.showEmploymentToggle && canManageWorkers();
   const jobOptions = (state.jobs || []).map(job => `<option value="${escapeHtml(job.name)}">${job.name}</option>`).join('');
   return `
     <div class="table-wrap">
@@ -410,7 +430,7 @@ function employeesView() {
     <div class="card">
       <div class="card-header">
         <div><h2>Employees</h2><div class="sub">Search the full imported roster and open worker profiles.</div></div>
-        <button class="btn dark" id="addWorkerBtn">Add Worker</button>
+        ${canManageWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
       </div>
       <div class="section filter-row">
         ${[['all','All Workers'],['active','Active'],['inactive','Inactive'],['terminated','Terminated'],['archived','Archived'],['qualified','Qualified'],['expiring','Expiring Soon'],['attention','Needs Attention'],['bloodwork','Has Bloodwork']].map(([id,label])=>`<button class="${state.employeeFilter===id?'active':''}" data-worker-filter="${id}">${label}</button>`).join('')}
@@ -459,7 +479,7 @@ function selectedWorkerSection() {
           <table>
             <thead><tr><th>Certification</th><th>Status</th><th>Date</th><th>Document</th><th>Action</th></tr></thead>
             <tbody>
-              ${worker.certifications.map(c=>`<tr><td>${c.name}</td><td>${badge(c.status)}</td><td>${c.date || '-'}</td><td>${String(c.document || '').startsWith('/uploads/') ? `<a href="${c.document}" target="_blank" class="link">Open File</a>` : (c.document || 'On file')}</td><td><button class="btn light" data-delete-cert="${worker.id}|${encodeURIComponent(c.name)}" style="padding:8px 12px;">Delete</button></td></tr>`).join('')}
+              ${worker.certifications.map(c=>`<tr><td>${c.name}</td><td>${badge(c.status)}</td><td>${c.date || '-'}</td><td>${String(c.document || '').startsWith('/uploads/') ? `<a href="${c.document}" target="_blank" class="link">Open File</a>` : (c.document || 'On file')}</td><td>${canDeleteRecords() ? `<button class="btn light" data-delete-cert="${worker.id}|${encodeURIComponent(c.name)}" style="padding:8px 12px;">Delete</button>` : '<span class="small muted">Admin only</span>'}</td></tr>`).join('')}
             </tbody>
           </table>
         </div>
@@ -482,9 +502,9 @@ function selectedWorkerSection() {
         <div class="card">
           <div class="card-header">
             <div><h2>Bloodwork</h2><div class="sub">Manage bloodwork records for this worker.</div></div>
-            <button class="btn dark" data-open-bloodwork-add="${worker.id}">Add Bloodwork</button>
+            ${canManageBloodwork() ? `<button class="btn dark" data-open-bloodwork-add="${worker.id}">Add Bloodwork</button>` : ''}
           </div>
-          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><span style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn light" data-edit-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Edit</button><button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button></span></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
+          <div class="section">${worker.bloodwork.length ? worker.bloodwork.map((b, idx)=>`<div class="tag" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>${b.testDate} · BLL ${b.bll} · ZPP ${b.zpp} · Next Due ${b.nextDue} · ${b.status}</span><span style="display:flex;gap:8px;flex-wrap:wrap;">${canManageBloodwork() ? `<button class="btn light" data-edit-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Edit</button>` : ''}${canDeleteRecords() ? `<button class="btn light" data-delete-bloodwork="${worker.id}|${idx}" style="padding:6px 10px;">Delete</button>` : ''}${!canManageBloodwork() && !canDeleteRecords() ? '<span class="small muted">View only</span>' : ''}</span></div>`).join('') : '<div class="muted">No bloodwork records.</div>'}</div>
         </div>
         <div class="card">
           <h2>Driver License</h2>
@@ -579,7 +599,7 @@ function workerPortalView() {
 function jobsView() {
   return layout(`
     <div class="card">
-      <div class="card-header"><div><h2>Jobs</h2><div class="sub">Add jobs and define what certifications are required.</div></div><button class="btn dark" id="addJobBtn">Add Job</button></div>
+      <div class="card-header"><div><h2>Jobs</h2><div class="sub">Add jobs and define what certifications are required.</div></div>${canManageJobs() ? '<button class="btn dark" id="addJobBtn">Add Job</button>' : ''}</div>
       <div class="section inline-input"><span>🔎</span><input id="jobSearch" value="${escapeHtml(state.jobSearch)}" placeholder="Search jobs or owner..." /></div>
       <div class="section grid grid-3">
         ${state.jobs.map(job=>`<div class="card" style="background:${job.id===state.selectedJobId?'#0f172a':'#f8fafc'};color:${job.id===state.selectedJobId?'#fff':'#0f172a'};box-shadow:none;">
@@ -591,7 +611,7 @@ function jobsView() {
           </div>
           <div class="button-row section">
             <button class="btn ${job.id===state.selectedJobId?'light':'dark'}" data-select-job="${job.id}">Open</button>
-            <button class="btn light" data-edit-job="${job.id}">Edit</button>
+            ${canManageJobs() ? `<button class="btn light" data-edit-job="${job.id}">Edit</button>` : ''}
           </div>
         </div>`).join('')}
       </div>
@@ -604,7 +624,7 @@ function jobsView() {
             <button class="btn ${state.selectedBucket==='qualified'?'dark':'light'}" data-bucket="qualified">Qualified (${(state.jobs.find(j => j.id === state.selectedJobId)?.buckets?.qualified || []).length})</button>
             <button class="btn ${state.selectedBucket==='expiring'?'dark':'light'}" data-bucket="expiring">Expiring (${(state.jobs.find(j => j.id === state.selectedJobId)?.buckets?.expiring || []).length})</button>
             <button class="btn ${state.selectedBucket==='notQualified'?'dark':'light'}" data-bucket="notQualified">Not Qualified (${(state.jobs.find(j => j.id === state.selectedJobId)?.buckets?.notQualified || []).length})</button>
-            <button class="btn light" id="editSelectedJob">Edit Requirements</button>
+            ${canManageJobs() ? '<button class="btn light" id="editSelectedJob">Edit Requirements</button>' : ''}
           </div>
         </div>
         <div class="section">${workerTable((state.jobs.find(j => j.id === state.selectedJobId)?.buckets?.[state.selectedBucket]) || [])}</div>
@@ -629,7 +649,7 @@ function certsView() {
         <div><h2>Certs</h2><div class="sub">Built from the worker summary sheet so office can see every tracked certification in one place.</div></div>
         <div class="right-note">
           <button class="btn dark" data-open-cert-upload="">Add / Upload Certification</button>
-          <button class="btn light" id="openAddCertDropdownBtn">Add Certification to Dropdown</button>
+          ${String(state.user?.role || '') === 'Admin' ? '<button class="btn light" id="openAddCertDropdownBtn">Add Certification to Dropdown</button>' : ''}
           <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
         </div>
       </div>
@@ -656,7 +676,7 @@ function certsView() {
           <div><h2>${selectedCert.name}</h2><div class="sub">Click a worker to open the full profile.</div></div>
           <div class="right-note">
             <button class="btn dark" data-open-cert-upload="${escapeHtml(selectedCert.name)}">Upload This Certification</button>
-            ${selectedCert.isDynamic ? `<button class="btn light" data-delete-dropdown-cert="${escapeHtml(selectedCert.name)}">Delete from Dropdown</button>` : ''}
+            ${(selectedCert.isDynamic && String(state.user?.role || '') === 'Admin') ? `<button class="btn light" data-delete-dropdown-cert="${escapeHtml(selectedCert.name)}">Delete from Dropdown</button>` : ''}
             <div class="button-row cert-scope-grid">
             <button class="btn ${state.selectedCertScope==='active-good'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-good">Active Good (${selectedCert.activeGood ?? 0})</button>
             <button class="btn ${state.selectedCertScope==='active-attention'?'dark':'light'}" data-cert-name="${escapeHtml(selectedCert.name)}" data-cert-scope="active-attention">Active Needs Attention (${selectedCert.activeNeedsAttention ?? 0})</button>
@@ -674,7 +694,7 @@ function bloodworkView() {
     <div class="card" id="bloodwork-add-form">
       <div class="card-header">
         <div><h2>Bloodwork Management</h2><div class="sub">Track BLL / ZPP cycles and identify who needs action.</div></div>
-        <button class="btn dark" id="saveBloodworkBtn">Add Bloodwork</button>
+        ${canManageBloodwork() ? '<button class="btn dark" id="saveBloodworkBtn">Add Bloodwork</button>' : ''}
       </div>
       <div class="grid grid-3 section">
         <div>
@@ -707,7 +727,7 @@ function bloodworkView() {
           </select>
         </div>
       </div>
-      <div id="bloodworkAddStatus" class="small muted section"></div>
+      <div id="bloodworkAddStatus" class="small muted section">${!canManageBloodwork() ? 'PM can view bloodwork here but cannot add or edit it.' : ''}</div>
     </div>
 
     <div class="card section">
@@ -716,7 +736,7 @@ function bloodworkView() {
         <table>
           <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
-            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td><td><div class="button-row"><button class="btn light" data-edit-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Edit</button><button class="btn light" data-delete-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Delete</button></div></td></tr>`).join('')}
+            ${state.bloodwork.map(row=>`<tr><td>${row.workerName}</td><td>${row.testDate}</td><td>${row.nextDue}</td><td>${row.bll}</td><td>${row.zpp}</td><td>${badge(row.status)}</td><td><div class="button-row">${canManageBloodwork() ? `<button class="btn light" data-edit-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Edit</button>` : ''}${canDeleteRecords() ? `<button class="btn light" data-delete-bloodwork="${row.workerId}|${row.rowIndex}" style="padding:8px 12px;">Delete</button>` : ''}${!canManageBloodwork() && !canDeleteRecords() ? '<span class="small muted">View only</span>' : ''}</div></td></tr>`).join('')}
           </tbody>
         </table>
       </div>
@@ -823,7 +843,7 @@ function uploadsView() {
               <strong>${u.file}</strong> · ${u.worker || 'Unassigned'}${u.certName ? ` · ${u.certName}` : ''}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''} · ${u.status}${u.originalFileName ? ` · Selected File ${u.originalFileName}` : ''}
               <span style="display:inline-flex;gap:8px;align-items:center;margin-left:10px;">
                 ${u.filePath ? `<a href="${u.filePath}" target="_blank" class="link">Open File</a>` : ''}
-                <button class="btn light" data-delete-upload="${u.id}" style="padding:8px 12px;">Delete</button>
+                ${canDeleteRecords() ? `<button class="btn light" data-delete-upload="${u.id}" style="padding:8px 12px;">Delete</button>` : ''}
               </span>
             </div>`).join('') : '<div class="muted">No uploads yet.</div>'}
         </div>
@@ -971,65 +991,6 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
-function displayAuditRole(row) {
-  const directRole = String(row?.actorRole || row?.role || '').trim();
-  if (directRole && directRole !== '-') return directRole;
-
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (!username || username === 'system') return '-';
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  return 'Worker';
-}
-
-
-
-function accountForcePasswordChangeView() {
-  return `
-    <div class="container">
-      <div class="hero">
-        <div class="hero-top">
-          <div>
-            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
-            <div class="sub" style="color:#cbd5e1;">For security, you must change your temporary password before entering the portal.</div>
-          </div>
-          <div class="right-note">
-            <span class="pill">Role: ${state.user?.role || '-'}</span>
-            <button class="btn light" id="logoutBtn">Log Out</button>
-          </div>
-        </div>
-      </div>
-      <div class="section">
-        <div class="card" style="max-width:760px;margin:0 auto;">
-          <div class="card-header">
-            <div>
-              <h2>Change Temporary Password</h2>
-              <div class="sub">This is required on first login and after any password reset.</div>
-            </div>
-          </div>
-          <div class="grid grid-2 section">
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Current Password</div>
-              <input id="forcedCurrentPassword" type="password" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">New Password</div>
-              <input id="forcedNewPassword" type="password" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
-              <input id="forcedConfirmPassword" type="password" />
-            </div>
-          </div>
-          <div class="button-row section">
-            <button class="btn dark" id="saveForcedPasswordBtn">Update Password</button>
-            <div id="forcedPasswordStatus" class="small muted"></div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
 
 function portalAccessView() {
   const rows = state.accessUsers || [];
@@ -1126,8 +1087,6 @@ function render() {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
     app.innerHTML = workerPortalView();
-  } else if (state.user.mustChangePassword) {
-    app.innerHTML = accountForcePasswordChangeView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1136,10 +1095,10 @@ function render() {
     if (state.view === 'bloodwork') view = bloodworkView();
     if (state.view === 'alerts') view = alertsView();
     if (state.view === 'uploads') view = uploadsView();
-    if (state.view === 'access') view = portalAccessView();
+    if (state.view === 'access') view = canViewAdmin() ? portalAccessView() : dashboardView();
     if (state.view === 'history') view = historyView();
     if (state.view === 'reports') view = reportsView();
-    if (state.view === 'admin') view = adminView();
+    if (state.view === 'admin') view = canViewAdmin() ? adminView() : dashboardView();
     app.innerHTML = view;
   }
   bindEvents();
@@ -1173,9 +1132,9 @@ async function refreshData() {
   state.bloodwork = await api('/api/bloodwork');
   state.uploads = await api('/api/uploads');
   state.alerts = normalizeAlertFeed(await api('/api/alerts'));
-  state.accessUsers = await api('/api/access-users');
+  state.accessUsers = canViewAdmin() ? await api('/api/access-users') : [];
   state.auditLog = await api('/api/audit-log?limit=150');
-  state.admin = await api('/api/admin');
+  state.admin = canViewAdmin() ? await api('/api/admin') : null;
   const certPayload = await api('/api/certs');
   state.certs = certPayload.certs || [];
   state.certsSource = certPayload.workbookSource || '';
@@ -1235,85 +1194,6 @@ function bindEvents() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
     render();
-  });
-
-  document.getElementById('changeMyPasswordBtn')?.addEventListener('click', async () => {
-    if (!state.user || state.user.role === 'Worker') return;
-
-    const currentPassword = String(window.prompt('Enter your current password:', '') || '').trim();
-    if (!currentPassword) return;
-
-    const newPassword = String(window.prompt('Enter your new password (at least 6 characters):', '') || '').trim();
-    if (!newPassword) return;
-
-    const confirmPassword = String(window.prompt('Confirm your new password:', '') || '').trim();
-    if (!confirmPassword) return;
-
-    if (newPassword !== confirmPassword) {
-      window.alert('New password and confirm password do not match.');
-      return;
-    }
-
-    try {
-      await api('/api/account-password-change', {
-        method: 'POST',
-        body: {
-          username: state.user.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      window.alert(err.message || 'Failed to update password.');
-    }
-  });
-
-
-
-  document.getElementById('saveForcedPasswordBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('forcedPasswordStatus');
-    if (status) {
-      status.textContent = 'Updating password...';
-      status.style.color = '';
-    }
-
-    const currentPassword = String(document.getElementById('forcedCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('forcedNewPassword')?.value || '').trim();
-    const confirmPassword = String(document.getElementById('forcedConfirmPassword')?.value || '').trim();
-
-    if (!currentPassword) {
-      if (status) { status.textContent = 'Current password is required.'; status.style.color = '#991b1b'; }
-      return;
-    }
-    if (newPassword.length < 6) {
-      if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; }
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      if (status) { status.textContent = 'New password and confirm password do not match.'; status.style.color = '#991b1b'; }
-      return;
-    }
-
-    try {
-      await api('/api/account-password-change', {
-        method: 'POST',
-        body: {
-          username: state.user.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
-    }
   });
 
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
