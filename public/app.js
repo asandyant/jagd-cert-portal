@@ -966,6 +966,25 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
+
+function displayAuditRole(row) {
+  const directRole = String(row?.actorRole || row?.role || '').trim();
+  if (directRole) return directRole;
+
+  const username = String(row?.actorUsername || row?.username || '').trim().toLowerCase();
+  if (username === 'admin') return 'Admin';
+  if (username === 'office') return 'Office';
+  if (username === 'pm') return 'PM';
+  if (username.startsWith('worker') || username.startsWith('emp') || username.startsWith('employee')) return 'Worker';
+
+  const actorName = String(row?.actorName || '').trim();
+  if (actorName.toLowerCase().includes('admin')) return 'Admin';
+  if (actorName.toLowerCase().includes('office')) return 'Office';
+  if (actorName.toLowerCase().includes('project manager')) return 'PM';
+
+  return '-';
+}
+
 function historyView() {
   const rows = state.auditLog || [];
   return layout(`
