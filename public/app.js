@@ -852,68 +852,17 @@ function reportsView() {
 
 function officeDigestPreviewText() {
   const alerts = liveAlerts();
-  const getByKey = key => alerts.find(item => item.key === key) || null;
-
-  const expiring = getByKey('expiring-certs');
-  const attention = getByKey('workers-attention');
-  const bloodwork = getByKey('bloodwork-due');
-  const jobs = getByKey('jobs-review');
-  const uploads = getByKey('uploads-review');
-
   const lines = [
     'JAGD Cert Portal Daily Office Digest',
     '',
-    `Generated: ${new Date().toLocaleString()}`,
+    ...(alerts.length
+      ? alerts.map(item => `- ${item.title}: ${item.detail}`)
+      : ['- No active alerts right now.']),
     '',
-    'Summary',
-    `- Expiring Certifications: ${expiring?.count || 0}`,
-    `- Workers Need Attention: ${attention?.count || 0}`,
-    `- Bloodwork Due: ${bloodwork?.count || 0}`,
-    `- Jobs Needing Review: ${jobs?.count || 0}`,
-    `- Uploads Waiting for Review: ${uploads?.count || 0}`,
-    '',
-    'Priority Actions'
+    'Suggested recipients: office / admin',
+    'Suggested send time: 6:00 AM'
   ];
-
-  if (alerts.length) {
-    alerts.forEach(item => {
-      const count = item.count || (item.items || []).length || 0;
-      lines.push(`- ${item.title}: ${count} item(s)`);
-      if (item.detail) {
-        lines.push(`  ${item.detail}`);
-      }
-
-      const previewItems = (item.items || []).slice(0, 5);
-      previewItems.forEach(entry => {
-        if (item.scope === 'workers') {
-          lines.push(`  • ${entry.name} — ${entry.status || 'Needs review'}${entry.nextIssue ? ` — Next Issue: ${entry.nextIssue}` : ''}`);
-        } else if (item.scope === 'jobs') {
-          lines.push(`  • ${entry.name} — ${entry.owner || '-'} — ${entry.stage || 'Needs Review'}`);
-        } else if (item.scope === 'uploads') {
-          lines.push(`  • ${entry.file} — ${entry.worker || 'Unassigned'}${entry.certName ? ` — ${entry.certName}` : ''} — ${entry.status || 'Needs Review'}`);
-        }
-      });
-
-      if ((item.items || []).length > 5) {
-        lines.push(`  • ...and ${(item.items || []).length - 5} more`);
-      }
-    });
-  } else {
-    lines.push('- No active alerts right now.');
-  }
-
-  lines.push(
-    '',
-    'Notes',
-    '- Review uploads waiting for attachment or office review.',
-    '- Check workers listed under attention before they are assigned to active jobs.',
-    '- Confirm expiring items are scheduled for renewal before due dates.',
-    '',
-    'Suggested recipient: Alerts@jagdapps.com',
-    'Suggested send time: 6:00 AM ET'
-  );
-
-  RETURN_JOIN_SENTINEL
+  return lines.join('\n');
 }
 
 function adminView() {
@@ -939,7 +888,7 @@ function adminView() {
           <div class="tag"><strong>Suggested Send Time:</strong> 6:00 AM</div>
           <div class="tag"><strong>Employee Email Alerts:</strong> Hold for Phase 2</div>
         </div>
-        <div class="small muted">Daily office digest is configured. Use Send Test Digest to send the current alert summary to the office mailbox and confirm formatting.</div>
+        <div class="small muted">Daily office digest is now configured. Use Send Test Digest any time to verify delivery.</div>
         <div class="section button-row">
           <button class="btn dark" id="sendTestDigestBtn">Send Test Digest</button>
           <div id="sendTestDigestStatus" class="small muted"></div>
@@ -947,7 +896,7 @@ function adminView() {
       </div>
       <div class="card">
         <h2>Office Digest Preview</h2>
-        <div class="small muted">This preview is built from the live alert data already loaded in the portal. It is formatted to read more like a real morning office summary.</div>
+        <div class="small muted">This is what the office daily digest would look like based on the current alert data.</div>
         <textarea rows="12" style="width:100%; margin-top:12px;">${escapeHtml(officeDigestPreviewText())}</textarea>
       </div>
     </div>
@@ -1657,4 +1606,4 @@ document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEvent
 (async function init() {
   state.dashboard = await api('/api/dashboard');
   render();
-})();return lines.join('\n')
+})();
