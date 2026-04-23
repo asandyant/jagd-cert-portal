@@ -447,16 +447,7 @@ function selectedWorkerSection() {
             ${['Active','Inactive'].map(status => `<button class="${(worker.employmentStatus || 'Active')===status ? 'active' : ''}" data-set-employment="${worker.id}|${status}">${status}</button>`).join('')}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
-          <div style="margin-top:6px;font-weight:700;">Username: ${worker.portalUsername || '-'}</div>
-          <div class="small muted" style="margin-top:8px;">Temporary Password</div>
-          <div style="margin-top:4px;font-weight:700;">worker123</div>
-          <div class="small muted" style="margin-top:10px;">Password Status</div>
-          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag">Temp Password Active</span>' : '<span class="tag">Password Changed</span>'}</div>
-          <div class="small muted" style="margin-top:10px;">Must Change On Login</div>
-          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag dark">Yes</span>' : '<span class="tag">No</span>'}</div>
-          <div class="button-row section">
-            <button class="btn light" data-reset-worker-password="${worker.id}">Reset Password</button>
-          </div>
+          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
         </div>
         <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
       <div class="section table-wrap">
@@ -497,39 +488,6 @@ function selectedWorkerSection() {
       </div>
       <div class="section" style="display:flex;justify-content:center;">
         <button class="btn light" data-back-to-top="employees-top">Back to Top</button>
-      </div>
-    </div>`;
-}
-
-
-function workerPasswordChangeView() {
-  const username = state.user?.username || '';
-  return `
-    <div class="login-shell">
-      <div class="login-card">
-        <div class="hero">
-          <div class="hero-top">
-            <div>
-              <h1 style="margin:10px 0 0;font-size:34px;">JAGD Worker Portal</h1>
-              <div class="sub" style="color:#cbd5e1;">For security, you need to change your temporary password before entering the portal.</div>
-            </div>
-            <div class="right-note">
-              <span class="pill">${escapeHtml(username)}</span>
-              <button class="btn light" id="logoutBtn">Log Out</button>
-            </div>
-          </div>
-        </div>
-        <div class="card section">
-          <div class="card-header"><div><h2>Change Temporary Password</h2><div class="sub">Your current temporary password is worker123 unless office reset it again.</div></div></div>
-          <div class="grid grid-2 section">
-            <div><div class="small muted">Current Password</div><input id="workerCurrentPassword" type="password" placeholder="Enter current password" /></div>
-            <div><div class="small muted">New Password</div><input id="workerNewPassword" type="password" placeholder="At least 6 characters" /></div>
-          </div>
-          <div class="button-row section">
-            <button class="btn dark" id="workerChangePasswordBtn">Save New Password</button>
-            <div id="workerChangePasswordStatus" class="small muted"></div>
-          </div>
-        </div>
       </div>
     </div>`;
 }
@@ -894,17 +852,69 @@ function reportsView() {
 
 function officeDigestPreviewText() {
   const alerts = liveAlerts();
+  const getByKey = key => alerts.find(item => item.key === key) || null;
+
+  const expiring = getByKey('expiring-certs');
+  const attention = getByKey('workers-attention');
+  const bloodwork = getByKey('bloodwork-due');
+  const jobs = getByKey('jobs-review');
+  const uploads = getByKey('uploads-review');
+
   const lines = [
     'JAGD Cert Portal Daily Office Digest',
     '',
-    ...(alerts.length
-      ? alerts.map(item => `- ${item.title}: ${item.detail}`)
-      : ['- No active alerts right now.']),
+    `Generated: ${new Date().toLocaleString()}`,
     '',
-    'Suggested recipients: office / admin',
-    'Suggested send time: 6:00 AM'
+    'Summary',
+    `- Expiring Certifications: ${expiring?.count || 0}`,
+    `- Workers Need Attention: ${attention?.count || 0}`,
+    `- Bloodwork Due: ${bloodwork?.count || 0}`,
+    `- Jobs Needing Review: ${jobs?.count || 0}`,
+    `- Uploads Waiting for Review: ${uploads?.count || 0}`,
+    '',
+    'Priority Actions'
   ];
-  return lines.join('\n');
+
+  if (alerts.length) {
+    alerts.forEach(item => {
+      const count = item.count || (item.items || []).length || 0;
+      lines.push(`- ${item.title}: ${count} item(s)`);
+      if (item.detail) {
+        lines.push(`  ${item.detail}`);
+      }
+
+      const previewItems = (item.items || []).slice(0, 5);
+      previewItems.forEach(entry => {
+        if (item.scope === 'workers') {
+          lines.push(`  • ${entry.name} — ${entry.status || 'Needs review'}${entry.nextIssue ? ` — Next Issue: ${entry.nextIssue}` : ''}`);
+        } else if (item.scope === 'jobs') {
+          lines.push(`  • ${entry.name} — ${entry.owner || '-'} — ${entry.stage || 'Needs Review'}`);
+        } else if (item.scope === 'uploads') {
+          lines.push(`  • ${entry.file} — ${entry.worker || 'Unassigned'}${entry.certName ? ` — ${entry.certName}` : ''} — ${entry.status || 'Needs Review'}`);
+        }
+      });
+
+      if ((item.items || []).length > 5) {
+        lines.push(`  • ...and ${(item.items || []).length - 5} more`);
+      }
+    });
+  } else {
+    lines.push('- No active alerts right now.');
+  }
+
+  lines.push(
+    '',
+    'Notes',
+    '- Review uploads waiting for attachment or office review.',
+    '- Check workers listed under attention before they are assigned to active jobs.',
+    '- Confirm expiring items are scheduled for renewal before due dates.',
+    '',
+    'Suggested recipient: Alerts@jagdapps.com',
+    'Suggested send time: 6:00 AM ET'
+  );
+
+  return lines.join('
+');
 }
 
 function adminView() {
@@ -930,7 +940,7 @@ function adminView() {
           <div class="tag"><strong>Suggested Send Time:</strong> 6:00 AM</div>
           <div class="tag"><strong>Employee Email Alerts:</strong> Hold for Phase 2</div>
         </div>
-        <div class="small muted">Daily office digest is now configured. Use Send Test Digest any time to verify delivery.</div>
+        <div class="small muted">Daily office digest is configured. Use Send Test Digest to send the current alert summary to the office mailbox and confirm formatting.</div>
         <div class="section button-row">
           <button class="btn dark" id="sendTestDigestBtn">Send Test Digest</button>
           <div id="sendTestDigestStatus" class="small muted"></div>
@@ -938,7 +948,7 @@ function adminView() {
       </div>
       <div class="card">
         <h2>Office Digest Preview</h2>
-        <div class="small muted">This is what the office daily digest would look like based on the current alert data.</div>
+        <div class="small muted">This preview is built from the live alert data already loaded in the portal. It is formatted to read more like a real morning office summary.</div>
         <textarea rows="12" style="width:100%; margin-top:12px;">${escapeHtml(officeDigestPreviewText())}</textarea>
       </div>
     </div>
@@ -1008,17 +1018,6 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
-function displayAuditRole(row) {
-  const role = String(row?.actorRole || row?.role || '').trim();
-  if (role) return role;
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  if (username) return 'Worker';
-  return '-';
-}
-
 function historyView() {
   const rows = state.auditLog || [];
   return layout(`
@@ -1042,7 +1041,7 @@ function render() {
   if (!state.user) {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
-    app.innerHTML = state.user.mustChangePassword ? workerPasswordChangeView() : workerPortalView();
+    app.innerHTML = workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1135,7 +1134,7 @@ function bindEvents() {
       return;
     } catch (e) {
       if (fallbackUsers[username] && fallbackUsers[username].password === password) {
-        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name, mustChangePassword: false };
+        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name };
         await refreshData();
         render();
         return;
@@ -1162,50 +1161,6 @@ function bindEvents() {
     }
   });
 
-
-  document.getElementById('workerChangePasswordBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('workerChangePasswordStatus');
-    const currentPassword = String(document.getElementById('workerCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('workerNewPassword')?.value || '').trim();
-    if (status) { status.textContent = ''; status.style.color = ''; }
-    if (!currentPassword) { if (status) { status.textContent = 'Enter your current password.'; status.style.color = '#991b1b'; } return; }
-    if (newPassword.length < 6) { if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; } return; }
-    try {
-      await api('/api/worker-password-change', {
-        method: 'POST',
-        body: {
-          workerId: state.user?.workerId,
-          username: state.user?.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
-    }
-  });
-
-  document.querySelectorAll('[data-reset-worker-password]').forEach(btn => btn.addEventListener('click', async () => {
-    if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can reset worker passwords.');
-      return;
-    }
-    const workerId = btn.dataset.resetWorkerPassword;
-    const confirmed = window.confirm('Reset this worker password to worker123 and require a password change on next login?');
-    if (!confirmed) return;
-    try {
-      await api(`/api/workers/${workerId}/reset-password`, { method: 'POST' });
-      await refreshData();
-      render();
-      window.alert('Worker password reset to worker123.');
-    } catch (err) {
-      window.alert(err.message || 'Failed to reset worker password.');
-    }
-  }));
 
   document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
