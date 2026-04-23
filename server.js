@@ -841,7 +841,21 @@ app.delete('/api/uploads/:id', (req, res) => {
 app.get('/api/audit-log', (req, res) => {
   const store = readStore();
   const limit = Math.max(1, Math.min(500, Number(req.query.limit) || 150));
-  res.json((store.auditLog || []).slice(0, limit));
+  const rows = (store.auditLog || []).slice(0, limit).map(row => {
+    const username = String(row.actorUsername || '').trim().toLowerCase();
+    const inferredRole =
+      row.actorRole ||
+      row.role ||
+      (username === 'admin' ? 'Admin' :
+       username === 'office' ? 'Office' :
+       username === 'pm' ? 'PM' :
+       username.startsWith('worker') ? 'Worker' : '');
+    return {
+      ...row,
+      actorRole: inferredRole || '-'
+    };
+  });
+  res.json(rows);
 });
 
 app.get('/api/alerts', (req, res) => {

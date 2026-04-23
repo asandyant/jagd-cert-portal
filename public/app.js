@@ -978,7 +978,7 @@ function historyView() {
         <div class="pill">${rows.length} event(s)</div>
       </div>
       <div class="section">
-        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead><tbody>${rows.map(row => `<tr><td>${formatAuditTime(row.time)}</td><td>${escapeHtml(row.actorName || row.actorUsername || 'System')}</td><td>${escapeHtml(row.actorRole || '-')}</td><td>${escapeHtml(row.action || '-')}</td><td>${escapeHtml(row.detail || '-')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No history events yet.</div>'}
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead><tbody>${rows.map(row => `<tr><td>${formatAuditTime(row.time)}</td><td>${escapeHtml(row.actorName || row.actorUsername || 'System')}</td><td>${escapeHtml(displayAuditRole(row))}</td><td>${escapeHtml(row.action || '-')}</td><td>${escapeHtml(row.detail || '-')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No history events yet.</div>'}
       </div>
     </div>
   `);
