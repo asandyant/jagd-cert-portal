@@ -932,6 +932,30 @@ function adminView() {
       </div>
     </div>
 
+    <div class="card section">
+      <div class="card-header">
+        <div>
+          <h2>Office / PM Account Reset</h2>
+          <div class="sub">Admin can reset Office and PM passwords to their default values. Admin accounts stay manual-only for safety.</div>
+        </div>
+      </div>
+      <div class="section table-wrap">
+        <table>
+          <thead><tr><th>Account</th><th>Role</th><th>Password Status</th><th>Reset Password</th><th>Action</th></tr></thead>
+          <tbody>
+            ${(state.admin?.managedAccounts || []).map(account => `<tr>
+              <td>${escapeHtml(account.name || account.username)}</td>
+              <td>${escapeHtml(account.role || '-')}</td>
+              <td>${escapeHtml(account.passwordStatus || '-')}</td>
+              <td>${account.resettable ? escapeHtml(account.defaultPassword || '-') : 'Manual Only'}</td>
+              <td>${account.resettable ? `<button class="btn light" data-reset-managed-account="${escapeHtml(account.username)}">Reset Password</button>` : '<span class="muted">Manual Only</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="small muted">Resetting Office or PM returns that account to the default password shown above. Existing roles stay unchanged.</div>
+    </div>
+
     <div class="grid grid-2 section">
       <div class="card">
         <h2>Email Alert Settings</h2>
@@ -1253,7 +1277,27 @@ function bindEvents() {
     }
   }));
 
-  document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
+  
+  document.querySelectorAll('[data-reset-managed-account]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can reset Office or PM passwords.');
+      return;
+    }
+    const username = String(btn.dataset.resetManagedAccount || '').trim().toLowerCase();
+    if (!username) return;
+    const confirmed = window.confirm(`Reset ${username} password back to its default value? This action cannot be undone.`);
+    if (!confirmed) return;
+    try {
+      const result = await api(`/api/accounts/${username}/reset-password`, { method: 'POST' });
+      await refreshData();
+      render();
+      window.alert(`${result.username} password reset to ${result.tempPassword}.`);
+    } catch (err) {
+      window.alert(err.message || 'Failed to reset account password.');
+    }
+  }));
+
+document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
     if (status) {
       status.textContent = 'Submitting certification upload...';

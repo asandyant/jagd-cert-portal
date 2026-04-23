@@ -142,6 +142,29 @@ function ensureWorkerPortalAccounts(store) {
   return store;
 }
 
+
+function managedPortalAccounts(store) {
+  const fallbackUsers = [
+    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User', resettable: false },
+    { username: 'office', password: 'office123', role: 'Office', name: 'Office User', resettable: true },
+    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager', resettable: true }
+  ];
+  const storeUsers = Array.isArray(store.users) ? store.users : [];
+  return fallbackUsers.map(base => {
+    const saved = storeUsers.find(u => String(u.username || '').trim().toLowerCase() === base.username);
+    const activePassword = String(saved?.password || base.password || '').trim();
+    const defaultActive = activePassword === base.password;
+    return {
+      username: base.username,
+      role: base.role,
+      name: saved?.name || base.name,
+      resettable: base.resettable,
+      defaultPassword: base.password,
+      passwordStatus: defaultActive ? 'Default Password Active' : 'Password Changed'
+    };
+  });
+}
+
 function certNeedsAttentionFromStatus(status = '') {
   const s = String(status || '').toLowerCase();
   return s.includes('expired') || s.includes('overdue') || s.includes('needs attention') || s.includes('due today') || s.includes('ready for review');
@@ -1161,11 +1184,59 @@ app.get('/api/worker-portal/:id', (req, res) => {
   });
 });
 
+
+app.post('/api/accounts/:username/reset-password', (req, res) => {
+  const store = readStore();
+  const actor = getAuditActor(req);
+  if (String(actor.role || '').trim() !== 'Admin') {
+    return res.status(403).send('Only admin can reset office or PM passwords.');
+  }
+
+  const username = String(req.params.username || '').trim().toLowerCase();
+  const managed = managedPortalAccounts(store).find(item => item.username === username);
+  if (!managed) return res.status(404).send('Account not found.');
+  if (!managed.resettable) return res.status(403).send('Admin accounts must be reset manually.');
+
+  const defaults = {
+    office: { password: 'office123', role: 'Office', name: 'Office User' },
+    pm: { password: 'pm123', role: 'PM', name: 'Project Manager' }
+  };
+  const fallback = defaults[username];
+  if (!fallback) return res.status(400).send('Unsupported account.');
+
+  store.users = Array.isArray(store.users) ? store.users : [];
+  let storeUser = store.users.find(u => String(u.username || '').trim().toLowerCase() === username);
+  if (storeUser) {
+    storeUser.password = fallback.password;
+    storeUser.role = storeUser.role || fallback.role;
+    storeUser.name = storeUser.name || fallback.name;
+  } else {
+    storeUser = {
+      username,
+      password: fallback.password,
+      role: fallback.role,
+      name: fallback.name
+    };
+    store.users.push(storeUser);
+  }
+
+  appendAuditLog(
+    store,
+    req,
+    'Reset office account password',
+    `${storeUser.name || storeUser.username} → ${fallback.password}`,
+    { username: storeUser.username, role: storeUser.role, name: storeUser.name }
+  );
+  writeStore(store);
+  res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword: fallback.password });
+});
+
 app.get('/api/admin', (req, res) => {
   const store = readStore();
   res.json({
     baselineRequirements: store.meta?.baselineRequirements || [],
     reminderRules: store.meta?.reminderRules || [],
+    managedAccounts: managedPortalAccounts(store),
     importStatus: [
       { label: 'Workers imported', value: `${store.workers.length} worker records loaded` },
       { label: 'Active workers', value: `${store.workers.filter(w => (w.employmentStatus || 'Active') === 'Active').length} active workers currently counted in job readiness` },
