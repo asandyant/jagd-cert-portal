@@ -971,7 +971,6 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
-
 function displayAuditRole(row) {
   const directRole = String(row?.actorRole || row?.role || '').trim();
   if (directRole && directRole !== '-') return directRole;
@@ -984,6 +983,53 @@ function displayAuditRole(row) {
   return 'Worker';
 }
 
+
+
+function accountForcePasswordChangeView() {
+  return `
+    <div class="container">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
+            <div class="sub" style="color:#cbd5e1;">For security, you must change your temporary password before entering the portal.</div>
+          </div>
+          <div class="right-note">
+            <span class="pill">Role: ${state.user?.role || '-'}</span>
+            <button class="btn light" id="logoutBtn">Log Out</button>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="card" style="max-width:760px;margin:0 auto;">
+          <div class="card-header">
+            <div>
+              <h2>Change Temporary Password</h2>
+              <div class="sub">This is required on first login and after any password reset.</div>
+            </div>
+          </div>
+          <div class="grid grid-2 section">
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Current Password</div>
+              <input id="forcedCurrentPassword" type="password" />
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">New Password</div>
+              <input id="forcedNewPassword" type="password" />
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
+              <input id="forcedConfirmPassword" type="password" />
+            </div>
+          </div>
+          <div class="button-row section">
+            <button class="btn dark" id="saveForcedPasswordBtn">Update Password</button>
+            <div id="forcedPasswordStatus" class="small muted"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
 
 function portalAccessView() {
   const rows = state.accessUsers || [];
@@ -1080,6 +1126,8 @@ function render() {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
     app.innerHTML = workerPortalView();
+  } else if (state.user.mustChangePassword) {
+    app.innerHTML = accountForcePasswordChangeView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1215,6 +1263,7 @@ function bindEvents() {
           newPassword
         }
       });
+      state.user.mustChangePassword = false;
       await refreshData();
       render();
       window.alert('Password updated successfully.');
@@ -1223,6 +1272,49 @@ function bindEvents() {
     }
   });
 
+
+
+  document.getElementById('saveForcedPasswordBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('forcedPasswordStatus');
+    if (status) {
+      status.textContent = 'Updating password...';
+      status.style.color = '';
+    }
+
+    const currentPassword = String(document.getElementById('forcedCurrentPassword')?.value || '').trim();
+    const newPassword = String(document.getElementById('forcedNewPassword')?.value || '').trim();
+    const confirmPassword = String(document.getElementById('forcedConfirmPassword')?.value || '').trim();
+
+    if (!currentPassword) {
+      if (status) { status.textContent = 'Current password is required.'; status.style.color = '#991b1b'; }
+      return;
+    }
+    if (newPassword.length < 6) {
+      if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; }
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      if (status) { status.textContent = 'New password and confirm password do not match.'; status.style.color = '#991b1b'; }
+      return;
+    }
+
+    try {
+      await api('/api/account-password-change', {
+        method: 'POST',
+        body: {
+          username: state.user.username,
+          currentPassword,
+          newPassword
+        }
+      });
+      state.user.mustChangePassword = false;
+      await refreshData();
+      render();
+      window.alert('Password updated successfully.');
+    } catch (err) {
+      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
+    }
+  });
 
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('sendTestDigestStatus');
