@@ -188,7 +188,6 @@ function layout(content) {
           </div>
           <div class="right-note">
             <span class="pill">Role: ${state.user?.role || '-'}</span>
-            ${state.user && state.user.role !== 'Worker' ? '<button class="btn light" id="changeMyPasswordBtn">Change My Password</button>' : ''}
             <button class="btn light" id="logoutBtn">Log Out</button>
           </div>
         </div>
@@ -971,65 +970,6 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
-function displayAuditRole(row) {
-  const directRole = String(row?.actorRole || row?.role || '').trim();
-  if (directRole && directRole !== '-') return directRole;
-
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (!username || username === 'system') return '-';
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  return 'Worker';
-}
-
-
-
-function accountForcePasswordChangeView() {
-  return `
-    <div class="container">
-      <div class="hero">
-        <div class="hero-top">
-          <div>
-            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Construction Cert Portal</h1>
-            <div class="sub" style="color:#cbd5e1;">For security, you must change your temporary password before entering the portal.</div>
-          </div>
-          <div class="right-note">
-            <span class="pill">Role: ${state.user?.role || '-'}</span>
-            <button class="btn light" id="logoutBtn">Log Out</button>
-          </div>
-        </div>
-      </div>
-      <div class="section">
-        <div class="card" style="max-width:760px;margin:0 auto;">
-          <div class="card-header">
-            <div>
-              <h2>Change Temporary Password</h2>
-              <div class="sub">This is required on first login and after any password reset.</div>
-            </div>
-          </div>
-          <div class="grid grid-2 section">
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Current Password</div>
-              <input id="forcedCurrentPassword" type="password" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">New Password</div>
-              <input id="forcedNewPassword" type="password" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
-              <input id="forcedConfirmPassword" type="password" />
-            </div>
-          </div>
-          <div class="button-row section">
-            <button class="btn dark" id="saveForcedPasswordBtn">Update Password</button>
-            <div id="forcedPasswordStatus" class="small muted"></div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
 
 function portalAccessView() {
   const rows = state.accessUsers || [];
@@ -1068,8 +1008,9 @@ function portalAccessView() {
           <div class="section">
             <div class="tag">Workers stay on the worker roster and keep their own worker portal access.</div>
             <div class="tag">Portal Access is for Admin, Office, and PM accounts not tied to the worker sheet.</div>
+            <div class="tag">New Portal Access users start with temp password <strong>changeme123</strong> and must change it on first login.</div>
+            <div class="tag">Resetting an Office or PM account sends it back to <strong>changeme123</strong> and forces another password change.</div>
             <div class="tag">Custom Admin accounts are manual-only for password reset.</div>
-            <div class="tag">Office and PM accounts can be reset back to a temporary password by Admin.</div>
           </div>
         </div>
       </div>
@@ -1080,14 +1021,18 @@ function portalAccessView() {
         <div><h2>Current Portal Access</h2><div class="sub">Activate, deactivate, or reset accounts without adding them to worker compliance tracking.</div></div>
       </div>
       <div class="section">
-        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Source</th><th>Account Status</th><th>Password Status</th><th>Must Change</th><th>Action</th></tr></thead><tbody>
           ${rows.map(row => `<tr>
             <td>${escapeHtml(row.name || '-')}</td>
             <td>${escapeHtml(row.username || '-')}</td>
             <td>${escapeHtml(row.role || '-')}</td>
             <td>${escapeHtml(row.source || '-')}</td>
             <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
-            <td>${escapeHtml(row.tempPassword || 'Hidden')}<div class="small muted">${escapeHtml(row.passwordStatus || '-')}</div></td>
+            <td>
+              <div>${escapeHtml(row.passwordStatus || '-')}</div>
+              <div class="small muted">${escapeHtml(row.tempPassword || 'Hidden')}</div>
+            </td>
+            <td>${row.mustChangePassword ? '<span class="badge bg-yellow">Yes</span>' : '<span class="badge bg-green">No</span>'}</td>
             <td>
               <div class="button-row">
                 ${row.source === 'Portal Access' ? `<button class="btn light" data-toggle-access-user="${escapeHtml(row.username)}|${row.active === false ? 'activate' : 'deactivate'}">${row.active === false ? 'Activate' : 'Deactivate'}</button>` : ''}
@@ -1126,8 +1071,6 @@ function render() {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
     app.innerHTML = workerPortalView();
-  } else if (state.user.mustChangePassword) {
-    app.innerHTML = accountForcePasswordChangeView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1235,85 +1178,6 @@ function bindEvents() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
     render();
-  });
-
-  document.getElementById('changeMyPasswordBtn')?.addEventListener('click', async () => {
-    if (!state.user || state.user.role === 'Worker') return;
-
-    const currentPassword = String(window.prompt('Enter your current password:', '') || '').trim();
-    if (!currentPassword) return;
-
-    const newPassword = String(window.prompt('Enter your new password (at least 6 characters):', '') || '').trim();
-    if (!newPassword) return;
-
-    const confirmPassword = String(window.prompt('Confirm your new password:', '') || '').trim();
-    if (!confirmPassword) return;
-
-    if (newPassword !== confirmPassword) {
-      window.alert('New password and confirm password do not match.');
-      return;
-    }
-
-    try {
-      await api('/api/account-password-change', {
-        method: 'POST',
-        body: {
-          username: state.user.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      window.alert(err.message || 'Failed to update password.');
-    }
-  });
-
-
-
-  document.getElementById('saveForcedPasswordBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('forcedPasswordStatus');
-    if (status) {
-      status.textContent = 'Updating password...';
-      status.style.color = '';
-    }
-
-    const currentPassword = String(document.getElementById('forcedCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('forcedNewPassword')?.value || '').trim();
-    const confirmPassword = String(document.getElementById('forcedConfirmPassword')?.value || '').trim();
-
-    if (!currentPassword) {
-      if (status) { status.textContent = 'Current password is required.'; status.style.color = '#991b1b'; }
-      return;
-    }
-    if (newPassword.length < 6) {
-      if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; }
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      if (status) { status.textContent = 'New password and confirm password do not match.'; status.style.color = '#991b1b'; }
-      return;
-    }
-
-    try {
-      await api('/api/account-password-change', {
-        method: 'POST',
-        body: {
-          username: state.user.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
-    }
   });
 
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
