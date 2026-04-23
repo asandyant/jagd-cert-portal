@@ -20,14 +20,20 @@ const state = {
   selectedCertScope: 'active-good',
   alerts: [],
   selectedAlertKey: null,
+  auditLog: [],
   pendingScrollTarget: null,
   workerPortal: null,
   modals: { worker: false, job: false, jobEdit: false }
 };
 
 async function api(path, options = {}) {
+  const actorHeaders = state.user ? {
+    'x-actor-username': state.user.username || '',
+    'x-actor-role': state.user.role || '',
+    'x-actor-name': state.user.name || state.user.username || ''
+  } : {};
   const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...actorHeaders, ...(options.headers || {}) },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined
   });
@@ -160,11 +166,12 @@ function layout(content) {
     ['bloodwork', 'Bloodwork'],
     ['alerts', 'Alerts'],
     ['uploads', 'Uploads'],
+    ['history', 'History Log'],
     ['reports', 'Reports'],
     ['admin', 'Admin']
   ];
   const visibleNav = navItems.filter(([id]) => {
-    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','reports'].includes(id);
+    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','history','reports'].includes(id);
     return true;
   });
   return `
@@ -386,7 +393,7 @@ function dashboardView() {
       <div class="card">
         <div class="card-header"><div><h2>Audit Log</h2><div class="sub">Recent actions inside the portal.</div></div></div>
         <div class="section">
-          ${(state.dashboard?.auditLog || []).map(row => `<div class="tag"><strong>${row.time}</strong> — ${row.action}: ${row.detail}</div>`).join('')}
+          ${(state.auditLog || []).slice(0,8).map(row => `<div class="tag"><strong>${formatAuditTime(row.time)}</strong> — ${escapeHtml(row.action || '-')} · ${escapeHtml(row.actorName || row.actorUsername || 'System')}</div>`).join('')}
         </div>
       </div>
     </div>
@@ -836,7 +843,7 @@ function reportsView() {
       </div>
       <div class="card">
         <h2>Notifications Center</h2>
-        <div class="section">${(state.dashboard?.auditLog || []).slice(0,4).map(row=>`<div class="tag">${row.time} — ${row.action}</div>`).join('')}</div>
+        <div class="section">${(state.auditLog || []).slice(0,4).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}</div>`).join('')}</div>
       </div>
     </div>
   `);
@@ -868,7 +875,7 @@ function adminView() {
       </div>
       <div class="card">
         <h2>Audit Log</h2>
-        <div class="section">${(state.admin?.auditLog || []).map(row=>`<div class="tag">${row.time} — ${row.action}: ${row.detail}</div>`).join('')}</div>
+        <div class="section">${(state.auditLog || []).slice(0,12).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}: ${escapeHtml(row.detail || '-')}</div>`).join('')}</div>
       </div>
     </div>
 
@@ -952,6 +959,31 @@ function escapeHtml(str) {
   return String(str || '').replaceAll('&', '&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 }
 
+function formatAuditTime(value) {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}
+
+function historyView() {
+  const rows = state.auditLog || [];
+  return layout(`
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>History Log</h2>
+          <div class="sub">Recent admin and office actions across certifications, uploads, bloodwork, dropdown management, and digest testing.</div>
+        </div>
+        <div class="pill">${rows.length} event(s)</div>
+      </div>
+      <div class="section">
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead><tbody>${rows.map(row => `<tr><td>${formatAuditTime(row.time)}</td><td>${escapeHtml(row.actorName || row.actorUsername || 'System')}</td><td>${escapeHtml(row.actorRole || '-')}</td><td>${escapeHtml(row.action || '-')}</td><td>${escapeHtml(row.detail || '-')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No history events yet.</div>'}
+      </div>
+    </div>
+  `);
+}
+
 function render() {
   const app = document.getElementById('app');
   if (!state.user) {
@@ -966,6 +998,7 @@ function render() {
     if (state.view === 'bloodwork') view = bloodworkView();
     if (state.view === 'alerts') view = alertsView();
     if (state.view === 'uploads') view = uploadsView();
+    if (state.view === 'history') view = historyView();
     if (state.view === 'reports') view = reportsView();
     if (state.view === 'admin') view = adminView();
     app.innerHTML = view;
@@ -986,6 +1019,7 @@ async function refreshData() {
     state.bloodwork = payload.worker?.bloodwork || [];
     state.alerts = (payload.alerts || []).map((a, i) => ({ ...a, key: `worker-alert-${i}`, items: [] }));
     state.admin = null;
+    state.auditLog = [];
     const certPayload = await api('/api/certs');
     state.certs = certPayload.certs || [];
     state.certsSource = certPayload.workbookSource || '';
@@ -999,6 +1033,7 @@ async function refreshData() {
   state.bloodwork = await api('/api/bloodwork');
   state.uploads = await api('/api/uploads');
   state.alerts = normalizeAlertFeed(await api('/api/alerts'));
+  state.auditLog = await api('/api/audit-log?limit=150');
   state.admin = await api('/api/admin');
   const certPayload = await api('/api/certs');
   state.certs = certPayload.certs || [];

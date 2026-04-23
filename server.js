@@ -69,6 +69,36 @@ function getCombinedCertCatalog(store) {
 
 
 
+function auditTimestamp() {
+  return new Date().toISOString();
+}
+
+function getAuditActor(req) {
+  const username = String(req.headers['x-actor-username'] || '').trim();
+  const role = String(req.headers['x-actor-role'] || '').trim();
+  const name = String(req.headers['x-actor-name'] || '').trim();
+  return {
+    username: username || 'system',
+    role: role || (username ? 'User' : 'System'),
+    name: name || username || 'System'
+  };
+}
+
+function appendAuditLog(store, req, action, detail, extra = {}) {
+  store.auditLog = Array.isArray(store.auditLog) ? store.auditLog : [];
+  const actor = getAuditActor(req);
+  store.auditLog.unshift({
+    time: auditTimestamp(),
+    action,
+    detail,
+    actorName: actor.name,
+    actorRole: actor.role,
+    actorUsername: actor.username,
+    ...extra
+  });
+  if (store.auditLog.length > 500) store.auditLog = store.auditLog.slice(0, 500);
+}
+
 
 function makeWorkerPortalUsername(worker, used = new Set()) {
   const first = String(worker.firstName || '').trim().toLowerCase();
@@ -231,6 +261,10 @@ function readStore() {
   const store = JSON.parse(fs.readFileSync(STORE_PATH, 'utf8'));
   if (!Array.isArray(store.certCatalog)) {
     store.certCatalog = [];
+    writeStore(store);
+  }
+  if (!Array.isArray(store.auditLog)) {
+    store.auditLog = [];
     writeStore(store);
   }
   if (store.workers) {
@@ -496,7 +530,7 @@ app.post('/api/workers', (req, res) => {
     driverLicense: body.driverLicense || { class:'N/A', number:'-', state:'', expires:'-', status:'Needs Attention' }
   };
   store.workers.push(worker);
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Added worker', detail: worker.name });
+  appendAuditLog(store, req, 'Added worker', worker.name, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
   res.json(worker);
 });
@@ -517,7 +551,7 @@ app.put('/api/workers/:id', (req, res) => {
     crew: body.crew ?? existing.crew,
     currentJob: body.currentJob ?? existing.currentJob
   };
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Updated worker', detail: `${store.workers[idx].name} → ${store.workers[idx].employmentStatus}` });
+  appendAuditLog(store, req, 'Updated worker', `${store.workers[idx].name} → ${store.workers[idx].employmentStatus}`, { workerId: store.workers[idx].id, workerName: store.workers[idx].name });
   writeStore(store);
   res.json(store.workers[idx]);
 });
@@ -545,7 +579,7 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
   recomputeWorkerSummary(worker);
 
   store.uploads = (store.uploads || []).filter(u => !(Number(u.workerId) === id && String(u.certName || '').trim() === certName));
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Deleted certification', detail: `${worker.name} · ${certName}` });
+  appendAuditLog(store, req, 'Deleted certification', `${worker.name} · ${certName}`, { workerId: worker.id, workerName: worker.name, certName });
   writeStore(store);
   res.json({ ok: true, certName, fileDeleted });
 });
@@ -573,11 +607,7 @@ app.post('/api/workers/:id/bloodwork', (req, res) => {
   worker.bloodwork.unshift(record);
   recomputeWorkerSummary(worker);
 
-  store.auditLog.unshift({
-    time: new Date().toLocaleTimeString(),
-    action: 'Added bloodwork',
-    detail: `${worker.name} · ${record.testDate || 'Bloodwork record'}`
-  });
+  appendAuditLog(store, req, 'Added bloodwork', `${worker.name} · ${record.testDate || 'Bloodwork record'}`, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
   res.json({ ok: true, rowIndex: 0, record });
 });
@@ -609,11 +639,7 @@ app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
   worker.bloodwork[rowIndex] = updated;
   recomputeWorkerSummary(worker);
 
-  store.auditLog.unshift({
-    time: new Date().toLocaleTimeString(),
-    action: 'Updated bloodwork',
-    detail: `${worker.name} · ${updated.testDate || 'Bloodwork record'}`
-  });
+  appendAuditLog(store, req, 'Updated bloodwork', `${worker.name} · ${updated.testDate || 'Bloodwork record'}`, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
   res.json({ ok: true, rowIndex, record: updated });
 });
@@ -634,11 +660,7 @@ app.delete('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
   const removed = worker.bloodwork.splice(rowIndex, 1)[0];
   recomputeWorkerSummary(worker);
 
-  store.auditLog.unshift({
-    time: new Date().toLocaleTimeString(),
-    action: 'Deleted bloodwork',
-    detail: `${worker.name} · ${removed.testDate || 'Bloodwork record'}`
-  });
+  appendAuditLog(store, req, 'Deleted bloodwork', `${worker.name} · ${removed.testDate || 'Bloodwork record'}`, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
   res.json({ ok: true, rowIndex, removed });
 });
@@ -690,7 +712,7 @@ app.post('/api/jobs', (req, res) => {
     lastUpdated: 'Just now'
   };
   store.jobs.push(job);
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Added job', detail: job.name });
+  appendAuditLog(store, req, 'Added job', job.name, { jobId: job.id, jobName: job.name });
   writeStore(store);
   res.json(job);
 });
@@ -711,7 +733,7 @@ app.put('/api/jobs/:id', (req, res) => {
     requirements: Array.isArray(body.requirements) ? body.requirements : existing.requirements,
     lastUpdated: 'Just now'
   };
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action:'Updated job', detail: store.jobs[idx].name });
+  appendAuditLog(store, req, 'Updated job', store.jobs[idx].name, { jobId: store.jobs[idx].id, jobName: store.jobs[idx].name });
   writeStore(store);
   res.json(store.jobs[idx]);
 });
@@ -793,7 +815,7 @@ app.post('/api/uploads', (req, res) => {
   }
 
   store.uploads.unshift(upload);
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Added upload', detail: `${upload.file} → ${upload.worker}` });
+  appendAuditLog(store, req, upload.workerId && upload.certName ? 'Added certification' : 'Added upload', upload.workerId && upload.certName ? `${upload.worker} · ${upload.certName}` : `${upload.file} → ${upload.worker}`, { workerId: upload.workerId || null, workerName: upload.worker || '', certName: upload.certName || '' });
   writeStore(store);
   res.json(upload);
 });
@@ -811,9 +833,15 @@ app.delete('/api/uploads/:id', (req, res) => {
   }
 
   store.uploads.splice(idx, 1);
-  store.auditLog.unshift({ time: new Date().toLocaleTimeString(), action: 'Deleted upload', detail: `${upload.file} → ${upload.worker}` });
+  appendAuditLog(store, req, 'Deleted upload', `${upload.file} → ${upload.worker}`, { workerId: upload.workerId || null, workerName: upload.worker || '', certName: upload.certName || '' });
   writeStore(store);
   res.json({ ok: true, id, fileDeleted });
+});
+
+app.get('/api/audit-log', (req, res) => {
+  const store = readStore();
+  const limit = Math.max(1, Math.min(500, Number(req.query.limit) || 150));
+  res.json((store.auditLog || []).slice(0, limit));
 });
 
 app.get('/api/alerts', (req, res) => {
@@ -854,12 +882,7 @@ app.post('/api/certs/catalog', (req, res) => {
   const aliases = [...new Set([name, ...aliasText.split(',').map(normalizeCertName).filter(Boolean)])];
   store.certCatalog = Array.isArray(store.certCatalog) ? store.certCatalog : [];
   store.certCatalog.push({ name, aliases });
-  store.auditLog = store.auditLog || [];
-  store.auditLog.unshift({
-    time: new Date().toLocaleTimeString(),
-    action: 'Added certification to dropdown',
-    detail: aliasText ? `${name} (aliases: ${aliasText})` : name
-  });
+  appendAuditLog(store, req, 'Added certification to dropdown', aliasText ? `${name} (aliases: ${aliasText})` : name, { certName: name });
   writeStore(store);
   res.json({ ok: true, added: true, name, aliases });
 });
@@ -879,12 +902,7 @@ app.delete('/api/certs/catalog', (req, res) => {
     return res.status(404).send('Certification was not found in the dropdown-only list. Built-in certifications cannot be deleted here.');
   }
 
-  store.auditLog = store.auditLog || [];
-  store.auditLog.unshift({
-    time: new Date().toLocaleTimeString(),
-    action: 'Deleted certification from dropdown',
-    detail: name
-  });
+  appendAuditLog(store, req, 'Deleted certification from dropdown', name, { certName: name });
   writeStore(store);
   res.json({ ok: true, deleted: true, name, message: 'Certification removed from the dropdown. Existing worker records and upload history were not changed.' });
 });
@@ -1010,12 +1028,7 @@ app.post('/api/send-test-digest', async (req, res) => {
   try {
     const store = readStore();
     await sendDigestEmail(store);
-    store.auditLog = store.auditLog || [];
-    store.auditLog.unshift({
-      time: new Date().toLocaleTimeString(),
-      action: 'Sent test digest',
-      detail: process.env.ALERTS_TO || 'Digest recipient not set'
-    });
+    appendAuditLog(store, req, 'Sent test digest', process.env.ALERTS_TO || 'Digest recipient not set');
     writeStore(store);
     res.json({ ok: true, message: 'Test digest sent successfully.' });
   } catch (err) {
