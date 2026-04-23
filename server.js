@@ -462,6 +462,58 @@ app.post('/api/login', (req, res) => {
   res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword } });
 });
 
+
+app.post('/api/account-password-change', (req, res) => {
+  const store = readStore();
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const currentPassword = String(req.body?.currentPassword || '').trim();
+  const newPassword = String(req.body?.newPassword || '').trim();
+
+  if (!username) return res.status(400).send('Username is required.');
+  if (!currentPassword) return res.status(400).send('Current password is required.');
+  if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
+  if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
+
+  const fallbackUsers = [
+    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
+    { username: 'office', password: 'office123', role: 'Office', name: 'Office User' },
+    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager' }
+  ];
+
+  let storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
+  const fallbackUser = fallbackUsers.find(u => u.username === username);
+
+  if (!storeUser && !fallbackUser) return res.status(404).send('Account not found.');
+
+  const existingPassword = String(storeUser?.password || fallbackUser?.password || '').trim();
+  if (existingPassword !== currentPassword) return res.status(401).send('Current password is incorrect.');
+
+  if (!store.users) store.users = [];
+
+  if (storeUser) {
+    storeUser.password = newPassword;
+  } else {
+    storeUser = {
+      username,
+      password: newPassword,
+      role: fallbackUser.role,
+      name: fallbackUser.name
+    };
+    store.users.push(storeUser);
+  }
+
+  appendAuditLog(
+    store,
+    req,
+    'Changed office password',
+    `${storeUser.name || storeUser.username} updated account password`,
+    { username: storeUser.username, role: storeUser.role, name: storeUser.name }
+  );
+  writeStore(store);
+  res.json({ ok: true, username: storeUser.username, role: storeUser.role });
+});
+
+
 app.get('/api/dashboard', (req, res) => {
   const store = readStore();
   const data = dashboard(store);
