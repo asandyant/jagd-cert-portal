@@ -447,7 +447,16 @@ function selectedWorkerSection() {
             ${['Active','Inactive'].map(status => `<button class="${(worker.employmentStatus || 'Active')===status ? 'active' : ''}" data-set-employment="${worker.id}|${status}">${status}</button>`).join('')}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
-          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
+          <div style="margin-top:6px;font-weight:700;">Username: ${worker.portalUsername || '-'}</div>
+          <div class="small muted" style="margin-top:8px;">Temporary Password</div>
+          <div style="margin-top:4px;font-weight:700;">worker123</div>
+          <div class="small muted" style="margin-top:10px;">Password Status</div>
+          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag">Temp Password Active</span>' : '<span class="tag">Password Changed</span>'}</div>
+          <div class="small muted" style="margin-top:10px;">Must Change On Login</div>
+          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag dark">Yes</span>' : '<span class="tag">No</span>'}</div>
+          <div class="button-row section">
+            <button class="btn light" data-reset-worker-password="${worker.id}">Reset Password</button>
+          </div>
         </div>
         <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
       <div class="section table-wrap">
@@ -488,6 +497,37 @@ function selectedWorkerSection() {
       </div>
       <div class="section" style="display:flex;justify-content:center;">
         <button class="btn light" data-back-to-top="employees-top">Back to Top</button>
+      </div>
+    </div>`;
+}
+
+
+function workerPasswordChangeView() {
+  const username = state.user?.username || '';
+  return `
+    <div class="container">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Worker Portal</h1>
+            <div class="sub" style="color:#cbd5e1;">For security, you need to change your temporary password before entering the portal.</div>
+          </div>
+          <div class="right-note">
+            <span class="pill">${escapeHtml(username)}</span>
+            <button class="btn light" id="logoutBtn">Log Out</button>
+          </div>
+        </div>
+      </div>
+      <div class="card section">
+        <div class="card-header"><div><h2>Change Temporary Password</h2><div class="sub">Your current temporary password is worker123 unless office reset it again.</div></div></div>
+        <div class="grid grid-2 section">
+          <div><div class="small muted">Current Password</div><input id="workerCurrentPassword" type="password" placeholder="Enter current password" /></div>
+          <div><div class="small muted">New Password</div><input id="workerNewPassword" type="password" placeholder="At least 6 characters" /></div>
+        </div>
+        <div class="button-row section">
+          <button class="btn dark" id="workerChangePasswordBtn">Save New Password</button>
+          <div id="workerChangePasswordStatus" class="small muted"></div>
+        </div>
       </div>
     </div>`;
 }
@@ -566,6 +606,18 @@ function workerPortalView() {
         <div class="card section">
           <div class="card-header"><div><h2>My Uploaded Records</h2><div class="sub">Files you submitted into the review queue.</div></div></div>
           <div class="section">${(payload.uploads || []).length ? payload.uploads.map(u => `<div class="tag"><strong>${u.file}</strong> · ${u.certName || '-'} · ${u.status}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''}</div>`).join('') : '<div class="muted">No uploads yet.</div>'}</div>
+        </div>
+
+        <div class="card section">
+          <div class="card-header"><div><h2>Change Password</h2><div class="sub">Update your worker portal password any time.</div></div></div>
+          <div class="grid grid-2 section">
+            <div><div class="small muted">Current Password</div><input id="workerCurrentPassword" type="password" placeholder="Enter current password" /></div>
+            <div><div class="small muted">New Password</div><input id="workerNewPassword" type="password" placeholder="At least 6 characters" /></div>
+          </div>
+          <div class="button-row section">
+            <button class="btn dark" id="workerChangePasswordBtn">Update Password</button>
+            <div id="workerChangePasswordStatus" class="small muted"></div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -979,6 +1031,7 @@ function displayAuditRole(row) {
   return 'Worker';
 }
 
+
 function historyView() {
   const rows = state.auditLog || [];
   return layout(`
@@ -1002,7 +1055,7 @@ function render() {
   if (!state.user) {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
-    app.innerHTML = workerPortalView();
+    app.innerHTML = state.user.mustChangePassword ? workerPasswordChangeView() : workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1122,6 +1175,50 @@ function bindEvents() {
     }
   });
 
+
+  document.getElementById('workerChangePasswordBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('workerChangePasswordStatus');
+    const currentPassword = String(document.getElementById('workerCurrentPassword')?.value || '').trim();
+    const newPassword = String(document.getElementById('workerNewPassword')?.value || '').trim();
+    if (status) { status.textContent = ''; status.style.color = ''; }
+    if (!currentPassword) { if (status) { status.textContent = 'Enter your current password.'; status.style.color = '#991b1b'; } return; }
+    if (newPassword.length < 6) { if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; } return; }
+    try {
+      await api('/api/worker-password-change', {
+        method: 'POST',
+        body: {
+          workerId: state.user?.workerId,
+          username: state.user?.username,
+          currentPassword,
+          newPassword
+        }
+      });
+      state.user.mustChangePassword = false;
+      await refreshData();
+      render();
+      window.alert('Password updated successfully.');
+    } catch (err) {
+      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
+    }
+  });
+
+  document.querySelectorAll('[data-reset-worker-password]').forEach(btn => btn.addEventListener('click', async () => {
+    if (state.user?.role !== 'Admin') {
+      window.alert('Only admin can reset worker passwords.');
+      return;
+    }
+    const workerId = btn.dataset.resetWorkerPassword;
+    const confirmed = window.confirm('Reset this worker password to worker123 and require a password change on next login?');
+    if (!confirmed) return;
+    try {
+      await api(`/api/workers/${workerId}/reset-password`, { method: 'POST' });
+      await refreshData();
+      render();
+      window.alert('Worker password reset to worker123.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to reset worker password.');
+    }
+  }));
 
   document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
