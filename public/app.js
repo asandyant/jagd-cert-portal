@@ -188,6 +188,7 @@ function layout(content) {
           </div>
           <div class="right-note">
             <span class="pill">Role: ${state.user?.role || '-'}</span>
+            ${state.user && state.user.role !== 'Worker' ? '<button class="btn light" id="changeMyPasswordBtn">Change My Password</button>' : ''}
             <button class="btn light" id="logoutBtn">Log Out</button>
           </div>
         </div>
@@ -971,6 +972,19 @@ function formatAuditTime(value) {
 }
 
 
+function displayAuditRole(row) {
+  const directRole = String(row?.actorRole || row?.role || '').trim();
+  if (directRole && directRole !== '-') return directRole;
+
+  const username = String(row?.actorUsername || '').trim().toLowerCase();
+  if (!username || username === 'system') return '-';
+  if (username === 'admin') return 'Admin';
+  if (username === 'office') return 'Office';
+  if (username === 'pm') return 'PM';
+  return 'Worker';
+}
+
+
 function portalAccessView() {
   const rows = state.accessUsers || [];
   return layout(`
@@ -1174,6 +1188,41 @@ function bindEvents() {
     state.user = null;
     render();
   });
+
+  document.getElementById('changeMyPasswordBtn')?.addEventListener('click', async () => {
+    if (!state.user || state.user.role === 'Worker') return;
+
+    const currentPassword = String(window.prompt('Enter your current password:', '') || '').trim();
+    if (!currentPassword) return;
+
+    const newPassword = String(window.prompt('Enter your new password (at least 6 characters):', '') || '').trim();
+    if (!newPassword) return;
+
+    const confirmPassword = String(window.prompt('Confirm your new password:', '') || '').trim();
+    if (!confirmPassword) return;
+
+    if (newPassword !== confirmPassword) {
+      window.alert('New password and confirm password do not match.');
+      return;
+    }
+
+    try {
+      await api('/api/account-password-change', {
+        method: 'POST',
+        body: {
+          username: state.user.username,
+          currentPassword,
+          newPassword
+        }
+      });
+      await refreshData();
+      render();
+      window.alert('Password updated successfully.');
+    } catch (err) {
+      window.alert(err.message || 'Failed to update password.');
+    }
+  });
+
 
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('sendTestDigestStatus');
