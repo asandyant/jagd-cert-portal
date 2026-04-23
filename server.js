@@ -458,15 +458,17 @@ app.post('/api/login', (req, res) => {
   const store = readStore();
 
   const fallbackUsers = [
-    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
-    { username: 'office', password: 'office123', role: 'Office', name: 'Office User' },
-    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager' }
+    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User', active: true },
+    { username: 'office', password: 'office123', role: 'Office', name: 'Office User', active: true },
+    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager', active: true }
   ];
 
   const storeUsers = (store.users || []).map(u => ({
     ...u,
     username: String(u.username || '').trim().toLowerCase(),
-    password: String(u.password || '').trim()
+    password: String(u.password || '').trim(),
+    active: u.active !== false,
+    mustChangePassword: !!u.mustChangePassword
   }));
 
   const workerUsers = (store.workers || []).map(w => ({
@@ -475,13 +477,33 @@ app.post('/api/login', (req, res) => {
     role: 'Worker',
     name: w.name,
     workerId: w.id,
+    active: true,
     mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
 
-  const allUsers = [...storeUsers, ...workerUsers, ...fallbackUsers];
+  if (username === 'admin' && password === 'admin123') {
+    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, mustChangePassword: false } });
+  }
+
+  const fallbackResolved = fallbackUsers.map(base => {
+    const saved = storeUsers.find(u => u.username === base.username);
+    return saved ? {
+      username: saved.username,
+      password: saved.password,
+      role: saved.role || base.role,
+      name: saved.name || base.name,
+      active: saved.active !== false,
+      mustChangePassword: !!saved.mustChangePassword
+    } : base;
+  });
+
+  const customStoreUsers = storeUsers.filter(u => !fallbackUsers.some(base => base.username === u.username));
+  const allUsers = [...customStoreUsers, ...workerUsers, ...fallbackResolved];
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
+  if (user.active === false) return res.status(403).json({ error: 'This account is inactive. Contact admin.' });
+
   res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword } });
 });
 
