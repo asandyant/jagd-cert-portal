@@ -913,8 +913,7 @@ function officeDigestPreviewText() {
     'Suggested send time: 6:00 AM ET'
   );
 
-  return lines.join('
-');
+  RETURN_JOIN_SENTINEL
 }
 
 function adminView() {
@@ -1658,4 +1657,4 @@ document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEvent
 (async function init() {
   state.dashboard = await api('/api/dashboard');
   render();
-})();
+})();return lines.join('\n')
