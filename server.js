@@ -84,19 +84,6 @@ function getAuditActor(req) {
   };
 }
 
-function actorRole(req) {
-  return String(getAuditActor(req).role || '').trim();
-}
-
-function requireRoles(req, res, allowed = []) {
-  const role = actorRole(req);
-  if (!allowed.includes(role)) {
-    res.status(403).send('You do not have permission to do that.');
-    return false;
-  }
-  return true;
-}
-
 function appendAuditLog(store, req, action, detail, extra = {}) {
   store.auditLog = Array.isArray(store.auditLog) ? store.auditLog : [];
   const actor = getAuditActor(req);
@@ -605,7 +592,6 @@ app.get('/api/workers/:id', (req, res) => {
 });
 
 app.post('/api/workers', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const body = req.body || {};
   const worker = {
@@ -630,7 +616,6 @@ app.post('/api/workers', (req, res) => {
 });
 
 app.put('/api/workers/:id', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const idx = store.workers.findIndex(w => w.id === id);
@@ -652,7 +637,6 @@ app.put('/api/workers/:id', (req, res) => {
 });
 
 app.delete('/api/workers/:id/certifications', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const worker = (store.workers || []).find(w => w.id === id);
@@ -682,7 +666,6 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
 
 
 app.post('/api/workers/:id/reset-password', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const worker = (store.workers || []).find(w => String(w.id) === String(req.params.id));
   if (!worker) return res.status(404).send('Worker not found');
@@ -715,7 +698,6 @@ app.post('/api/worker-password-change', (req, res) => {
 });
 
 app.post('/api/workers/:id/bloodwork', (req, res) => {
-  if (!requireRoles(req, res, ['Admin','Office'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const worker = (store.workers || []).find(w => w.id === id);
@@ -744,7 +726,6 @@ app.post('/api/workers/:id/bloodwork', (req, res) => {
 });
 
 app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
-  if (!requireRoles(req, res, ['Admin','Office'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const rowIndex = Number(req.params.rowIndex);
@@ -777,7 +758,6 @@ app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
 });
 
 app.delete('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
-  if (!requireRoles(req, res, ['Admin','Office'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const rowIndex = Number(req.params.rowIndex);
@@ -833,7 +813,6 @@ app.get('/api/jobs/:id', (req, res) => {
 });
 
 app.post('/api/jobs', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const body = req.body || {};
   const job = {
@@ -852,7 +831,6 @@ app.post('/api/jobs', (req, res) => {
 });
 
 app.put('/api/jobs/:id', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const idx = store.jobs.findIndex(j => j.id === id);
@@ -956,7 +934,6 @@ app.post('/api/uploads', (req, res) => {
 });
 
 app.delete('/api/uploads/:id', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   const id = Number(req.params.id);
   const idx = (store.uploads || []).findIndex(u => Number(u.id) === id);
@@ -1175,7 +1152,6 @@ async function sendDigestEmail(store) {
 }
 
 app.post('/api/send-test-digest', async (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   try {
     const store = readStore();
     await sendDigestEmail(store);
@@ -1256,7 +1232,6 @@ app.post('/api/accounts/:username/reset-password', (req, res) => {
 });
 
 app.get('/api/admin', (req, res) => {
-  if (!requireRoles(req, res, ['Admin'])) return;
   const store = readStore();
   res.json({
     baselineRequirements: store.meta?.baselineRequirements || [],
