@@ -109,7 +109,7 @@ function makeWorkerPortalUsername(worker, used = new Set()) {
   else if (last) base = last.replace(/[^a-z0-9]+/g, '');
   else base = full || `worker${worker.id}`;
   let candidate = base || `worker${worker.id}`;
-  let n = 1;
+  let n = 2;
   while (used.has(candidate)) {
     candidate = `${base}${n}`;
     n += 1;
@@ -131,6 +131,10 @@ function ensureWorkerPortalAccounts(store) {
     }
     if (!worker.portalPassword) {
       worker.portalPassword = 'worker123';
+      changed = true;
+    }
+    if (typeof worker.portalMustChangePassword !== 'boolean') {
+      worker.portalMustChangePassword = true;
       changed = true;
     }
   }
@@ -447,14 +451,15 @@ app.post('/api/login', (req, res) => {
     password: String(w.portalPassword || 'worker123').trim(),
     role: 'Worker',
     name: w.name,
-    workerId: w.id
+    workerId: w.id,
+    mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
 
   const allUsers = [...storeUsers, ...workerUsers, ...fallbackUsers];
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
-  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null } });
+  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword } });
 });
 
 app.get('/api/dashboard', (req, res) => {
@@ -582,6 +587,39 @@ app.delete('/api/workers/:id/certifications', (req, res) => {
   appendAuditLog(store, req, 'Deleted certification', `${worker.name} · ${certName}`, { workerId: worker.id, workerName: worker.name, certName });
   writeStore(store);
   res.json({ ok: true, certName, fileDeleted });
+});
+
+
+app.post('/api/workers/:id/reset-password', (req, res) => {
+  const store = readStore();
+  const worker = (store.workers || []).find(w => String(w.id) === String(req.params.id));
+  if (!worker) return res.status(404).send('Worker not found');
+
+  worker.portalPassword = 'worker123';
+  worker.portalMustChangePassword = true;
+  appendAuditLog(store, req, 'Reset worker password', `${worker.name} → worker123 (must change)`, { workerId: worker.id, workerName: worker.name });
+  writeStore(store);
+  res.json({ ok: true, username: worker.portalUsername, tempPassword: 'worker123', mustChangePassword: true });
+});
+
+app.post('/api/worker-password-change', (req, res) => {
+  const store = readStore();
+  const workerId = String(req.body?.workerId || '').trim();
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const currentPassword = String(req.body?.currentPassword || '').trim();
+  const newPassword = String(req.body?.newPassword || '').trim();
+
+  const worker = (store.workers || []).find(w => String(w.id) === workerId && String(w.portalUsername || '').trim().toLowerCase() === username);
+  if (!worker) return res.status(404).send('Worker account not found.');
+  if (String(worker.portalPassword || 'worker123').trim() !== currentPassword) return res.status(401).send('Current password is incorrect.');
+  if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
+  if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
+
+  worker.portalPassword = newPassword;
+  worker.portalMustChangePassword = false;
+  appendAuditLog(store, req, 'Changed worker password', `${worker.name} updated portal password`, { workerId: worker.id, workerName: worker.name });
+  writeStore(store);
+  res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, mustChangePassword: false });
 });
 
 app.post('/api/workers/:id/bloodwork', (req, res) => {
