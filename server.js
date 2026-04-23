@@ -457,6 +457,19 @@ app.post('/api/login', (req, res) => {
   const password = String(req.body?.password || '').trim();
   const store = readStore();
 
+  // Emergency built-in admin access so the portal can always be recovered.
+  if (username === 'admin' && password === 'admin123') {
+    return res.json({
+      user: {
+        username: 'admin',
+        role: 'Admin',
+        name: 'Admin User',
+        workerId: null,
+        mustChangePassword: false
+      }
+    });
+  }
+
   const fallbackUsers = [
     { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User', active: true },
     { username: 'office', password: 'office123', role: 'Office', name: 'Office User', active: true },
@@ -480,10 +493,6 @@ app.post('/api/login', (req, res) => {
     active: true,
     mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
-
-  if (username === 'admin' && password === 'admin123') {
-    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, mustChangePassword: false } });
-  }
 
   const fallbackResolved = fallbackUsers.map(base => {
     const saved = storeUsers.find(u => u.username === base.username);
