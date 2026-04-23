@@ -20,6 +20,7 @@ const state = {
   selectedCertScope: 'active-good',
   alerts: [],
   selectedAlertKey: null,
+  accessUsers: [],
   auditLog: [],
   pendingScrollTarget: null,
   workerPortal: null,
@@ -166,13 +167,16 @@ function layout(content) {
     ['bloodwork', 'Bloodwork'],
     ['alerts', 'Alerts'],
     ['uploads', 'Uploads'],
+    ['access', 'Portal Access'],
     ['history', 'History Log'],
     ['reports', 'Reports'],
     ['admin', 'Admin']
   ];
   const visibleNav = navItems.filter(([id]) => {
     if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','history','reports'].includes(id);
-    return true;
+    if (state.user?.role === 'Office') return id !== 'access';
+    if (state.user?.role === 'Admin') return true;
+    return id !== 'access';
   });
   return `
     <div class="container">
@@ -184,7 +188,6 @@ function layout(content) {
           </div>
           <div class="right-note">
             <span class="pill">Role: ${state.user?.role || '-'}</span>
-            ${state.user?.role !== 'Worker' ? `<button class="btn light" id="changeMyPasswordBtn">Change My Password</button>` : ''}
             <button class="btn light" id="logoutBtn">Log Out</button>
           </div>
         </div>
@@ -448,16 +451,7 @@ function selectedWorkerSection() {
             ${['Active','Inactive'].map(status => `<button class="${(worker.employmentStatus || 'Active')===status ? 'active' : ''}" data-set-employment="${worker.id}|${status}">${status}</button>`).join('')}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
-          <div style="margin-top:6px;font-weight:700;">Username: ${worker.portalUsername || '-'}</div>
-          <div class="small muted" style="margin-top:8px;">Temporary Password</div>
-          <div style="margin-top:4px;font-weight:700;">worker123</div>
-          <div class="small muted" style="margin-top:10px;">Password Status</div>
-          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag">Temp Password Active</span>' : '<span class="tag">Password Changed</span>'}</div>
-          <div class="small muted" style="margin-top:10px;">Must Change On Login</div>
-          <div style="margin-top:4px;">${worker.portalMustChangePassword ? '<span class="tag dark">Yes</span>' : '<span class="tag">No</span>'}</div>
-          <div class="button-row section">
-            <button class="btn light" data-reset-worker-password="${worker.id}">Reset Password</button>
-          </div>
+          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
         </div>
         <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
       <div class="section table-wrap">
@@ -498,37 +492,6 @@ function selectedWorkerSection() {
       </div>
       <div class="section" style="display:flex;justify-content:center;">
         <button class="btn light" data-back-to-top="employees-top">Back to Top</button>
-      </div>
-    </div>`;
-}
-
-
-function workerPasswordChangeView() {
-  const username = state.user?.username || '';
-  return `
-    <div class="container">
-      <div class="hero">
-        <div class="hero-top">
-          <div>
-            <h1 style="margin:10px 0 0;font-size:34px;">JAGD Worker Portal</h1>
-            <div class="sub" style="color:#cbd5e1;">For security, you need to change your temporary password before entering the portal.</div>
-          </div>
-          <div class="right-note">
-            <span class="pill">${escapeHtml(username)}</span>
-            <button class="btn light" id="logoutBtn">Log Out</button>
-          </div>
-        </div>
-      </div>
-      <div class="card section">
-        <div class="card-header"><div><h2>Change Temporary Password</h2><div class="sub">Your current temporary password is worker123 unless office reset it again.</div></div></div>
-        <div class="grid grid-2 section">
-          <div><div class="small muted">Current Password</div><input id="workerCurrentPassword" type="password" placeholder="Enter current password" /></div>
-          <div><div class="small muted">New Password</div><input id="workerNewPassword" type="password" placeholder="At least 6 characters" /></div>
-        </div>
-        <div class="button-row section">
-          <button class="btn dark" id="workerChangePasswordBtn">Save New Password</button>
-          <div id="workerChangePasswordStatus" class="small muted"></div>
-        </div>
       </div>
     </div>`;
 }
@@ -607,18 +570,6 @@ function workerPortalView() {
         <div class="card section">
           <div class="card-header"><div><h2>My Uploaded Records</h2><div class="sub">Files you submitted into the review queue.</div></div></div>
           <div class="section">${(payload.uploads || []).length ? payload.uploads.map(u => `<div class="tag"><strong>${u.file}</strong> · ${u.certName || '-'} · ${u.status}${u.expirationDate ? ` · Expires ${u.expirationDate}` : ''}</div>`).join('') : '<div class="muted">No uploads yet.</div>'}</div>
-        </div>
-
-        <div class="card section">
-          <div class="card-header"><div><h2>Change Password</h2><div class="sub">Update your worker portal password any time.</div></div></div>
-          <div class="grid grid-2 section">
-            <div><div class="small muted">Current Password</div><input id="workerCurrentPassword" type="password" placeholder="Enter current password" /></div>
-            <div><div class="small muted">New Password</div><input id="workerNewPassword" type="password" placeholder="At least 6 characters" /></div>
-          </div>
-          <div class="button-row section">
-            <button class="btn dark" id="workerChangePasswordBtn">Update Password</button>
-            <div id="workerChangePasswordStatus" class="small muted"></div>
-          </div>
         </div>
       </div>
     </div>`;
@@ -932,30 +883,6 @@ function adminView() {
       </div>
     </div>
 
-    <div class="card section">
-      <div class="card-header">
-        <div>
-          <h2>Office / PM Account Reset</h2>
-          <div class="sub">Admin can reset Office and PM passwords to their default values. Admin accounts stay manual-only for safety.</div>
-        </div>
-      </div>
-      <div class="section table-wrap">
-        <table>
-          <thead><tr><th>Account</th><th>Role</th><th>Password Status</th><th>Reset Password</th><th>Action</th></tr></thead>
-          <tbody>
-            ${(state.admin?.managedAccounts || []).map(account => `<tr>
-              <td>${escapeHtml(account.name || account.username)}</td>
-              <td>${escapeHtml(account.role || '-')}</td>
-              <td>${escapeHtml(account.passwordStatus || '-')}</td>
-              <td>${account.resettable ? escapeHtml(account.defaultPassword || '-') : 'Manual Only'}</td>
-              <td>${account.resettable ? `<button class="btn light" data-reset-managed-account="${escapeHtml(account.username)}">Reset Password</button>` : '<span class="muted">Manual Only</span>'}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div class="small muted">Resetting Office or PM returns that account to the default password shown above. Existing roles stay unchanged.</div>
-    </div>
-
     <div class="grid grid-2 section">
       <div class="card">
         <h2>Email Alert Settings</h2>
@@ -1043,17 +970,75 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
-function displayAuditRole(row) {
-  const directRole = String(row?.actorRole || '').trim();
-  if (directRole) return directRole;
 
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (!username) return '-';
+function portalAccessView() {
+  const rows = state.accessUsers || [];
+  return layout(`
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Portal Access</h2>
+          <div class="sub">Add and manage Admin, Office, and PM accounts separately from the worker roster.</div>
+        </div>
+        <div class="pill">${rows.length} account(s)</div>
+      </div>
+      <div class="section grid grid-2">
+        <div class="card" style="background:#f8fafc;box-shadow:none;">
+          <div class="card-header"><div><h2>Add Access Person</h2><div class="sub">Use this for office staff, PMs, or extra admins who are not on the worker sheet.</div></div></div>
+          <div class="grid grid-2 section">
+            <input id="accessName" placeholder="Full name" />
+            <input id="accessUsername" placeholder="Username (lowercase)" />
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Role</div>
+              <select id="accessRole">
+                <option value="Office">Office</option>
+                <option value="PM">PM</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div class="small muted" style="display:flex;align-items:center;">New accounts start with temporary password <strong style="margin-left:6px;">changeme123</strong></div>
+          </div>
+          <div class="button-row section">
+            <button class="btn dark" id="saveAccessUserBtn">Add Access Person</button>
+            <div id="accessUserStatus" class="small muted"></div>
+          </div>
+        </div>
+        <div class="card" style="background:#f8fafc;box-shadow:none;">
+          <h2>Access Rules</h2>
+          <div class="section">
+            <div class="tag">Workers stay on the worker roster and keep their own worker portal access.</div>
+            <div class="tag">Portal Access is for Admin, Office, and PM accounts not tied to the worker sheet.</div>
+            <div class="tag">Custom Admin accounts are manual-only for password reset.</div>
+            <div class="tag">Office and PM accounts can be reset back to a temporary password by Admin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  return 'Worker';
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Current Portal Access</h2><div class="sub">Activate, deactivate, or reset accounts without adding them to worker compliance tracking.</div></div>
+      </div>
+      <div class="section">
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
+          ${rows.map(row => `<tr>
+            <td>${escapeHtml(row.name || '-')}</td>
+            <td>${escapeHtml(row.username || '-')}</td>
+            <td>${escapeHtml(row.role || '-')}</td>
+            <td>${escapeHtml(row.source || '-')}</td>
+            <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
+            <td>${escapeHtml(row.tempPassword || 'Hidden')}<div class="small muted">${escapeHtml(row.passwordStatus || '-')}</div></td>
+            <td>
+              <div class="button-row">
+                ${row.source === 'Portal Access' ? `<button class="btn light" data-toggle-access-user="${escapeHtml(row.username)}|${row.active === false ? 'activate' : 'deactivate'}">${row.active === false ? 'Activate' : 'Deactivate'}</button>` : ''}
+                ${(row.resettable && row.role !== 'Admin') ? `<button class="btn light" data-reset-access-user="${escapeHtml(row.username)}">Reset Password</button>` : `<span class="small muted">Manual only</span>`}
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody></table></div>` : '<div class="muted">No portal access accounts yet.</div>'}
+      </div>
+    </div>
+  `);
 }
 
 
@@ -1080,7 +1065,7 @@ function render() {
   if (!state.user) {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
-    app.innerHTML = state.user.mustChangePassword ? workerPasswordChangeView() : workerPortalView();
+    app.innerHTML = workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1089,6 +1074,7 @@ function render() {
     if (state.view === 'bloodwork') view = bloodworkView();
     if (state.view === 'alerts') view = alertsView();
     if (state.view === 'uploads') view = uploadsView();
+    if (state.view === 'access') view = portalAccessView();
     if (state.view === 'history') view = historyView();
     if (state.view === 'reports') view = reportsView();
     if (state.view === 'admin') view = adminView();
@@ -1110,6 +1096,7 @@ async function refreshData() {
     state.bloodwork = payload.worker?.bloodwork || [];
     state.alerts = (payload.alerts || []).map((a, i) => ({ ...a, key: `worker-alert-${i}`, items: [] }));
     state.admin = null;
+    state.accessUsers = [];
     state.auditLog = [];
     const certPayload = await api('/api/certs');
     state.certs = certPayload.certs || [];
@@ -1124,6 +1111,7 @@ async function refreshData() {
   state.bloodwork = await api('/api/bloodwork');
   state.uploads = await api('/api/uploads');
   state.alerts = normalizeAlertFeed(await api('/api/alerts'));
+  state.accessUsers = await api('/api/access-users');
   state.auditLog = await api('/api/audit-log?limit=150');
   state.admin = await api('/api/admin');
   const certPayload = await api('/api/certs');
@@ -1187,38 +1175,6 @@ function bindEvents() {
     render();
   });
 
-  document.getElementById('changeMyPasswordBtn')?.addEventListener('click', async () => {
-    if (!state.user || state.user.role === 'Worker') return;
-
-    const currentPassword = String(window.prompt('Enter your current password:', '') || '').trim();
-    if (!currentPassword) return;
-
-    const newPassword = String(window.prompt('Enter your new password (minimum 6 characters):', '') || '').trim();
-    if (!newPassword) return;
-
-    const confirmPassword = String(window.prompt('Confirm your new password:', '') || '').trim();
-    if (!confirmPassword) return;
-
-    if (newPassword !== confirmPassword) {
-      window.alert('New password and confirmation do not match.');
-      return;
-    }
-
-    try {
-      await api('/api/account-password-change', {
-        method: 'POST',
-        body: {
-          username: state.user.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      window.alert('Password updated successfully.');
-    } catch (e) {
-      window.alert(e.message || 'Failed to change password.');
-    }
-  });
-
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('sendTestDigestStatus');
     if (status) status.textContent = 'Sending...';
@@ -1233,71 +1189,7 @@ function bindEvents() {
   });
 
 
-  document.getElementById('workerChangePasswordBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('workerChangePasswordStatus');
-    const currentPassword = String(document.getElementById('workerCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('workerNewPassword')?.value || '').trim();
-    if (status) { status.textContent = ''; status.style.color = ''; }
-    if (!currentPassword) { if (status) { status.textContent = 'Enter your current password.'; status.style.color = '#991b1b'; } return; }
-    if (newPassword.length < 6) { if (status) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = '#991b1b'; } return; }
-    try {
-      await api('/api/worker-password-change', {
-        method: 'POST',
-        body: {
-          workerId: state.user?.workerId,
-          username: state.user?.username,
-          currentPassword,
-          newPassword
-        }
-      });
-      state.user.mustChangePassword = false;
-      await refreshData();
-      render();
-      window.alert('Password updated successfully.');
-    } catch (err) {
-      if (status) { status.textContent = err.message || 'Failed to update password.'; status.style.color = '#991b1b'; }
-    }
-  });
-
-  document.querySelectorAll('[data-reset-worker-password]').forEach(btn => btn.addEventListener('click', async () => {
-    if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can reset worker passwords.');
-      return;
-    }
-    const workerId = btn.dataset.resetWorkerPassword;
-    const confirmed = window.confirm('Reset this worker password to worker123 and require a password change on next login?');
-    if (!confirmed) return;
-    try {
-      await api(`/api/workers/${workerId}/reset-password`, { method: 'POST' });
-      await refreshData();
-      render();
-      window.alert('Worker password reset to worker123.');
-    } catch (err) {
-      window.alert(err.message || 'Failed to reset worker password.');
-    }
-  }));
-
-  
-  document.querySelectorAll('[data-reset-managed-account]').forEach(btn => btn.addEventListener('click', async () => {
-    if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can reset Office or PM passwords.');
-      return;
-    }
-    const username = String(btn.dataset.resetManagedAccount || '').trim().toLowerCase();
-    if (!username) return;
-    const confirmed = window.confirm(`Reset ${username} password back to its default value? This action cannot be undone.`);
-    if (!confirmed) return;
-    try {
-      const result = await api(`/api/accounts/${username}/reset-password`, { method: 'POST' });
-      await refreshData();
-      render();
-      window.alert(`${result.username} password reset to ${result.tempPassword}.`);
-    } catch (err) {
-      window.alert(err.message || 'Failed to reset account password.');
-    }
-  }));
-
-document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
+  document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
     if (status) {
       status.textContent = 'Submitting certification upload...';
@@ -1346,6 +1238,63 @@ document.getElementById('workerUploadBtn')?.addEventListener('click', async () =
       }
     }
   });
+
+
+
+  document.getElementById('saveAccessUserBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('accessUserStatus');
+    if (status) {
+      status.textContent = 'Saving access account...';
+      status.style.color = '';
+    }
+    try {
+      const name = String(document.getElementById('accessName')?.value || '').trim();
+      const username = String(document.getElementById('accessUsername')?.value || '').trim().toLowerCase();
+      const role = String(document.getElementById('accessRole')?.value || 'Office').trim();
+      await api('/api/access-users', { method: 'POST', body: { name, username, role, active: true } });
+      await refreshData();
+      state.view = 'access';
+      render();
+      window.alert('Portal access account added.');
+    } catch (err) {
+      if (status) {
+        status.textContent = err.message || 'Failed to add access account.';
+        status.style.color = '#991b1b';
+      } else {
+        window.alert(err.message || 'Failed to add access account.');
+      }
+    }
+  });
+
+  document.querySelectorAll('[data-toggle-access-user]').forEach(btn => btn.addEventListener('click', async () => {
+    const [username, action] = String(btn.dataset.toggleAccessUser || '').split('|');
+    const active = action === 'activate';
+    const confirmed = window.confirm(`${active ? 'Activate' : 'Deactivate'} this portal access account?`);
+    if (!confirmed) return;
+    try {
+      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'PUT', body: { active } });
+      await refreshData();
+      state.view = 'access';
+      render();
+    } catch (err) {
+      window.alert(err.message || 'Failed to update portal access account.');
+    }
+  }));
+
+  document.querySelectorAll('[data-reset-access-user]').forEach(btn => btn.addEventListener('click', async () => {
+    const username = String(btn.dataset.resetAccessUser || '').trim().toLowerCase();
+    const confirmed = window.confirm('Reset this portal access account back to its temporary password? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      const result = await api(`/api/access-users/${encodeURIComponent(username)}/reset-password`, { method: 'POST' });
+      await refreshData();
+      state.view = 'access';
+      render();
+      window.alert(`Password reset. Temporary password: ${result.tempPassword}`);
+    } catch (err) {
+      window.alert(err.message || 'Failed to reset portal access password.');
+    }
+  }));
 
 
   document.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', async () => {
