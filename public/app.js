@@ -138,6 +138,33 @@ function normalizeAlertFeed(alerts) {
   });
 }
 
+
+function roleSnapshotTitle() {
+  const role = String(state.user?.role || '');
+  if (role === 'Admin') return 'Admin Snapshot';
+  if (role === 'Office') return 'Office Snapshot';
+  if (role === 'PM') return 'PM Snapshot';
+  return 'Executive Snapshot';
+}
+
+function roleSnapshotText() {
+  const role = String(state.user?.role || '');
+  if (role === 'Admin') {
+    return 'You have full access to workers, jobs, certifications, bloodwork, uploads, portal access, history, reports, and admin tools. If Office or PM staff need account or permission changes, contact an Admin.';
+  }
+  if (role === 'Office') {
+    return 'You can manage certifications, bloodwork, uploads, reports, and worker records needed for office support. If you need account changes, deletions, or portal access updates, contact an Admin.';
+  }
+  if (role === 'PM') {
+    return 'You can review worker readiness, jobs, certifications, uploads, reports, and history. If you need bloodwork updated, account changes, or admin actions, contact an Admin.';
+  }
+  return 'This version includes real imported worker names, 30 current jobs, job requirement editing, add worker/add job, and a working backend.';
+}
+
+function workerPortalInstructions() {
+  return 'Use this portal to review your certifications and upload new certification documents one at a time. Select the correct certification, attach the file, and enter the expiration date before submitting. If something is missing or incorrect, contact the office or an Admin.';
+}
+
 function liveAlerts() {
   const normalized = normalizeAlertFeed(state.alerts || []);
   return normalized.length ? normalized : buildFallbackAlerts();
@@ -192,8 +219,8 @@ function layout(content) {
           </div>
         </div>
         <div class="snapshot">
-          <div class="small" style="color:#cbd5e1;">Executive Snapshot</div>
-          <div class="sub" style="color:#cbd5e1;">This version includes real imported worker names, 30 current jobs, job requirement editing, add worker/add job, and a working backend.</div>
+          <div class="small" style="color:#cbd5e1;">${roleSnapshotTitle()}</div>
+          <div class="sub" style="color:#cbd5e1;">${roleSnapshotText()}</div>
         </div>
         <div class="nav">
           ${visibleNav.map(([id,label]) => `<button class="${state.view===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}
@@ -553,7 +580,10 @@ function workerPortalView() {
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue. Choose the certification and file before submitting.</div></div></div>
+            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue. Choose the certification, attach the file, and enter the expiration date before submitting.</div></div></div>
+            <div class="section">
+              <div class="tag">${workerPortalInstructions()}</div>
+            </div>
             <div class="section grid grid-2">
               <input id="workerUploadFileName" placeholder="Record name (example: Fit_Test.pdf)" />
               <input id="workerUploadFilePicker" type="file" accept=".pdf,image/*" />
@@ -1221,8 +1251,10 @@ function bindEvents() {
       const selectedCertName = String(document.getElementById('workerUploadCertName').value || '').trim();
       const recordName = String(document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload').trim();
       const certName = selectedCertName || recordName;
+      const expirationDate = String(document.getElementById('workerUploadExpirationDate').value || '').trim();
       if (!certName) throw new Error('Please select a certification or enter a record name.');
       if (!pickedFile) throw new Error('Please choose a PDF or image file before submitting.');
+      if (!expirationDate) throw new Error('Please enter the certification expiration date before submitting.');
       let fileData = '';
       fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1239,7 +1271,7 @@ function bindEvents() {
           workerId: state.user.workerId,
           worker: state.workerPortal?.worker?.name || state.user.name,
           certName,
-          expirationDate: document.getElementById('workerUploadExpirationDate').value,
+          expirationDate,
           status: 'Needs Review',
           notes: document.getElementById('workerUploadNotes').value
         }
