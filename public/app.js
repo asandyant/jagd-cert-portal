@@ -970,6 +970,18 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
+function displayAuditRole(row) {
+  const directRole = String(row?.actorRole || row?.role || '').trim();
+  if (directRole && directRole !== '-') return directRole;
+
+  const username = String(row?.actorUsername || '').trim().toLowerCase();
+  if (!username || username === 'system') return '-';
+  if (username === 'admin') return 'Admin';
+  if (username === 'office') return 'Office';
+  if (username === 'pm') return 'PM';
+  return 'Worker';
+}
+
 
 function portalAccessView() {
   const rows = state.accessUsers || [];
