@@ -165,6 +165,42 @@ function managedPortalAccounts(store) {
   });
 }
 
+
+function getPortalAccessAccounts(store) {
+  const baseAccounts = managedPortalAccounts(store).map(item => ({
+    name: item.name,
+    username: item.username,
+    role: item.role,
+    active: true,
+    passwordStatus: item.passwordStatus,
+    tempPassword: item.passwordStatus === 'Default Password Active' ? item.defaultPassword : 'Hidden',
+    resettable: item.resettable,
+    source: 'System Default',
+    mustChangePassword: false
+  }));
+
+  const baseMap = new Map(baseAccounts.map(item => [String(item.username || '').toLowerCase(), item]));
+  const customUsers = (store.users || [])
+    .filter(user => !baseMap.has(String(user.username || '').trim().toLowerCase()))
+    .map(user => ({
+      name: user.name || user.username,
+      username: String(user.username || '').trim().toLowerCase(),
+      role: user.role || 'Office',
+      active: user.active !== false,
+      passwordStatus: user.password && user.tempPassword && user.password === user.tempPassword ? 'Temp Password Active' : 'Password Changed',
+      tempPassword: user.password && user.tempPassword && user.password === user.tempPassword ? user.tempPassword : 'Hidden',
+      resettable: String(user.role || '').trim() !== 'Admin',
+      source: 'Portal Access',
+      mustChangePassword: !!user.mustChangePassword
+    }));
+
+  return [...baseAccounts, ...customUsers].sort((a, b) => {
+    const roleCmp = String(a.role || '').localeCompare(String(b.role || ''));
+    if (roleCmp !== 0) return roleCmp;
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+}
+
 function certNeedsAttentionFromStatus(status = '') {
   const s = String(status || '').toLowerCase();
   return s.includes('expired') || s.includes('overdue') || s.includes('needs attention') || s.includes('due today') || s.includes('ready for review');
@@ -456,17 +492,6 @@ app.post('/api/login', (req, res) => {
   const username = String(req.body?.username || '').trim().toLowerCase();
   const password = String(req.body?.password || '').trim();
   const store = readStore();
-
-  // Emergency built-in access path so the portal can always be recovered.
-  if (username === 'admin' && password === 'admin123') {
-    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, mustChangePassword: false } });
-  }
-  if (username === 'office' && password === 'office123') {
-    return res.json({ user: { username: 'office', role: 'Office', name: 'Office User', workerId: null, mustChangePassword: false } });
-  }
-  if (username === 'pm' && password === 'pm123') {
-    return res.json({ user: { username: 'pm', role: 'PM', name: 'Project Manager', workerId: null, mustChangePassword: false } });
-  }
 
   const fallbackUsers = [
     { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
@@ -1242,12 +1267,116 @@ app.post('/api/accounts/:username/reset-password', (req, res) => {
   res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword: fallback.password });
 });
 
+
+app.get('/api/access-users', (req, res) => {
+  const store = readStore();
+  res.json(getPortalAccessAccounts(store));
+});
+
+app.post('/api/access-users', (req, res) => {
+  const store = readStore();
+  const actor = getAuditActor(req);
+  if (String(actor.role || '').trim() !== 'Admin') {
+    return res.status(403).send('Only admin can add portal access accounts.');
+  }
+
+  const name = String(req.body?.name || '').trim();
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const role = String(req.body?.role || '').trim();
+  const active = req.body?.active !== false;
+
+  if (!name) return res.status(400).send('Name is required.');
+  if (!username) return res.status(400).send('Username is required.');
+  if (!/^[a-z0-9._-]+$/.test(username)) return res.status(400).send('Username can only use lowercase letters, numbers, dots, dashes, and underscores.');
+  if (!['Admin', 'Office', 'PM'].includes(role)) return res.status(400).send('Role must be Admin, Office, or PM.');
+
+  const workerUsernameTaken = (store.workers || []).some(w => String(w.portalUsername || '').trim().toLowerCase() === username);
+  const existingUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
+  const reserved = ['admin', 'office', 'pm'];
+
+  if (workerUsernameTaken) return res.status(400).send('That username is already used by a worker account.');
+  if (existingUser) return res.status(400).send('That username is already in Portal Access.');
+  if (reserved.includes(username)) return res.status(400).send('That username is reserved by a system account.');
+
+  store.users = Array.isArray(store.users) ? store.users : [];
+  const tempPassword = 'changeme123';
+  const account = {
+    username,
+    password: tempPassword,
+    tempPassword,
+    role,
+    name,
+    active,
+    mustChangePassword: false
+  };
+  store.users.push(account);
+  appendAuditLog(store, req, 'Added portal access account', `${name} · ${role} · ${username}`, { username, role, name });
+  writeStore(store);
+  res.json({
+    ok: true,
+    account: {
+      name,
+      username,
+      role,
+      active,
+      passwordStatus: 'Temp Password Active',
+      tempPassword,
+      resettable: role !== 'Admin',
+      source: 'Portal Access',
+      mustChangePassword: false
+    }
+  });
+});
+
+app.put('/api/access-users/:username', (req, res) => {
+  const store = readStore();
+  const actor = getAuditActor(req);
+  if (String(actor.role || '').trim() !== 'Admin') {
+    return res.status(403).send('Only admin can update portal access accounts.');
+  }
+
+  const username = String(req.params.username || '').trim().toLowerCase();
+  const storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
+  if (!storeUser) return res.status(404).send('Portal access account not found.');
+
+  if (typeof req.body?.active === 'boolean') {
+    storeUser.active = req.body.active;
+  }
+
+  appendAuditLog(store, req, storeUser.active === false ? 'Deactivated portal access' : 'Activated portal access', `${storeUser.name || storeUser.username} · ${storeUser.role}`, { username: storeUser.username, role: storeUser.role, name: storeUser.name });
+  writeStore(store);
+  res.json({ ok: true, username: storeUser.username, active: storeUser.active !== false });
+});
+
+app.post('/api/access-users/:username/reset-password', (req, res) => {
+  const store = readStore();
+  const actor = getAuditActor(req);
+  if (String(actor.role || '').trim() !== 'Admin') {
+    return res.status(403).send('Only admin can reset portal access passwords.');
+  }
+
+  const username = String(req.params.username || '').trim().toLowerCase();
+  const storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
+  if (!storeUser) return res.status(404).send('Portal access account not found.');
+  if (String(storeUser.role || '').trim() === 'Admin') return res.status(403).send('Admin accounts remain manual-only for safety.');
+
+  const tempPassword = storeUser.tempPassword || 'changeme123';
+  storeUser.password = tempPassword;
+  storeUser.mustChangePassword = false;
+
+  appendAuditLog(store, req, 'Reset portal access password', `${storeUser.name || storeUser.username} · ${storeUser.role}`, { username: storeUser.username, role: storeUser.role, name: storeUser.name });
+  writeStore(store);
+  res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword, mustChangePassword: false });
+});
+
+
 app.get('/api/admin', (req, res) => {
   const store = readStore();
   res.json({
     baselineRequirements: store.meta?.baselineRequirements || [],
     reminderRules: store.meta?.reminderRules || [],
     managedAccounts: managedPortalAccounts(store),
+    accessAccounts: getPortalAccessAccounts(store),
     importStatus: [
       { label: 'Workers imported', value: `${store.workers.length} worker records loaded` },
       { label: 'Active workers', value: `${store.workers.filter(w => (w.employmentStatus || 'Active') === 'Active').length} active workers currently counted in job readiness` },
