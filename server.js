@@ -94,6 +94,15 @@ function requireAdmin(req, res) {
   return true;
 }
 
+function requireAdminOrOffice(req, res) {
+  const role = String(getAuditActor(req).role || '').trim();
+  if (!['Admin', 'Office'].includes(role)) {
+    res.status(403).send('Admin or Office access required.');
+    return false;
+  }
+  return true;
+}
+
 function appendAuditLog(store, req, action, detail, extra = {}) {
   store.auditLog = Array.isArray(store.auditLog) ? store.auditLog : [];
   const actor = getAuditActor(req);
@@ -757,6 +766,7 @@ app.post('/api/worker-password-change', (req, res) => {
 });
 
 app.post('/api/workers/:id/bloodwork', (req, res) => {
+  if (!requireAdminOrOffice(req, res)) return;
   const store = readStore();
   const id = Number(req.params.id);
   const worker = (store.workers || []).find(w => w.id === id);
@@ -785,6 +795,7 @@ app.post('/api/workers/:id/bloodwork', (req, res) => {
 });
 
 app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
+  if (!requireAdminOrOffice(req, res)) return;
   const store = readStore();
   const id = Number(req.params.id);
   const rowIndex = Number(req.params.rowIndex);
@@ -817,6 +828,7 @@ app.put('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
 });
 
 app.delete('/api/workers/:id/bloodwork/:rowIndex', (req, res) => {
+  if (!requireAdmin(req, res)) return;
   const store = readStore();
   const id = Number(req.params.id);
   const rowIndex = Number(req.params.rowIndex);
