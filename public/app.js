@@ -173,7 +173,7 @@ function layout(content) {
     ['admin', 'Admin']
   ];
   const visibleNav = navItems.filter(([id]) => {
-    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','alerts','uploads','history','reports'].includes(id);
+    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','uploads','reports'].includes(id);
     if (state.user?.role === 'Office') return ['dashboard','employees','jobs','certs','bloodwork','alerts','uploads','history','reports'].includes(id);
     if (state.user?.role === 'Admin') return true;
     return id !== 'access' && id !== 'admin';
@@ -989,18 +989,6 @@ function formatAuditTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleString();
-}
-
-function displayAuditRole(row) {
-  const directRole = String(row?.actorRole || row?.role || '').trim();
-  if (directRole && directRole !== '-') return directRole;
-
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (!username || username === 'system') return '-';
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  return 'Worker';
 }
 
 
