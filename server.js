@@ -118,6 +118,213 @@ function appendAuditLog(store, req, action, detail, extra = {}) {
   if (store.auditLog.length > 500) store.auditLog = store.auditLog.slice(0, 500);
 }
 
+function getEmailAlertSettings(store) {
+  store.meta = store.meta || {};
+  const existing = store.meta.emailAlerts || {};
+  const settings = {
+    workerAlertsEnabled: existing.workerAlertsEnabled === true,
+    officeDigestEnabled: existing.officeDigestEnabled !== false,
+    reminderDays: Array.isArray(existing.reminderDays) && existing.reminderDays.length ? existing.reminderDays : [30],
+    sendHour: Number.isFinite(Number(existing.sendHour)) ? Number(existing.sendHour) : 6,
+    testRecipient: existing.testRecipient || process.env.ALERTS_TO || process.env.SMTP_USER || '',
+    lastWorkerAutoRunDate: existing.lastWorkerAutoRunDate || '',
+    lastWorkerManualRunAt: existing.lastWorkerManualRunAt || '',
+    lastWorkerTestAt: existing.lastWorkerTestAt || ''
+  };
+  store.meta.emailAlerts = settings;
+  return settings;
+}
+
+function normalizeEmail(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isValidEmail(value = '') {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function dateKeyNY(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function hourNY(date = new Date()) {
+  return Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    hour12: false
+  }).format(date));
+}
+
+function createMailTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) {
+    throw new Error('Missing SMTP environment variables.');
+  }
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: false,
+    auth: { user, pass },
+    tls: { minVersion: 'TLSv1.2' }
+  });
+}
+
+function workerCertReminderItems(store) {
+  const settings = getEmailAlertSettings(store);
+  const reminderDays = settings.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0);
+  const maxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
+  const activeWorkers = (store.workers || []).filter(worker => (worker.employmentStatus || 'Active') === 'Active');
+  const rows = [];
+
+  activeWorkers.forEach(worker => {
+    const email = normalizeEmail(worker.email || worker.workerEmail || '');
+    (worker.certifications || []).forEach(cert => {
+      const certName = normalizeCertName(cert.name || 'Certification');
+      const expirationDate = String(cert.date || cert.expirationDate || '').trim();
+      const status = String(cert.status || '').trim() || computeExpirationStatus(expirationDate);
+      let daysUntil = null;
+      if (expirationDate && /^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
+        const exp = new Date(`${expirationDate}T00:00:00`);
+        daysUntil = Math.floor((exp - TODAY) / (1000 * 60 * 60 * 24));
+      }
+      const shouldInclude =
+        status.includes('Expired') ||
+        status.includes('Needs Attention') ||
+        status.includes('Expiring') ||
+        (daysUntil !== null && daysUntil <= maxDays);
+      if (!shouldInclude) return;
+      rows.push({
+        workerId: worker.id,
+        workerName: worker.name,
+        email,
+        hasValidEmail: isValidEmail(email),
+        certName,
+        expirationDate: expirationDate || '-',
+        status,
+        daysUntil,
+        currentJob: worker.currentJob || worker.crew || '-',
+        reason: daysUntil !== null && daysUntil < 0 ? 'Expired' : daysUntil !== null ? `${daysUntil} day(s) until expiration` : status
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const da = a.daysUntil === null ? 9999 : a.daysUntil;
+    const db = b.daysUntil === null ? 9999 : b.daysUntil;
+    if (da !== db) return da - db;
+    return String(a.workerName || '').localeCompare(String(b.workerName || ''));
+  });
+}
+
+function groupWorkerReminderItems(items) {
+  const grouped = new Map();
+  items.forEach(item => {
+    const key = String(item.workerId || item.workerName || item.email);
+    if (!grouped.has(key)) grouped.set(key, { workerId: item.workerId, workerName: item.workerName, email: item.email, hasValidEmail: item.hasValidEmail, items: [] });
+    grouped.get(key).items.push(item);
+  });
+  return Array.from(grouped.values());
+}
+
+function buildWorkerReminderBody(workerGroup, testMode = false) {
+  const lines = [
+    testMode ? 'TEST WORKER CERTIFICATION ALERT' : 'JAGD Certification Reminder',
+    '',
+    `Hello ${workerGroup.workerName || 'Worker'},`,
+    '',
+    'The JAGD Cert Portal shows the following certification item(s) need attention:',
+    '',
+    ...workerGroup.items.map(item => `- ${item.certName}: ${item.status} · Expires ${item.expirationDate} · ${item.reason}`),
+    '',
+    'Please upload the updated certification in the JAGD Worker Portal or send it to the office for review.',
+    '',
+    'This message was sent automatically by the JAGD Cert Portal.'
+  ];
+  if (testMode) {
+    lines.splice(2, 0, 'This is a safe test email. No worker was emailed by this test.', '');
+  }
+  return lines.join('\n');
+}
+
+function workerReminderPreview(store) {
+  const settings = getEmailAlertSettings(store);
+  const items = workerCertReminderItems(store);
+  const grouped = groupWorkerReminderItems(items);
+  return {
+    settings,
+    totalWorkersWithAlerts: grouped.length,
+    totalCertItems: items.length,
+    workersWithValidEmail: grouped.filter(group => group.hasValidEmail).length,
+    workersMissingEmail: grouped.filter(group => !group.hasValidEmail).length,
+    rows: grouped.map(group => ({
+      workerId: group.workerId,
+      workerName: group.workerName,
+      email: group.email || '',
+      hasValidEmail: group.hasValidEmail,
+      itemCount: group.items.length,
+      summary: group.items.map(item => `${item.certName} (${item.status}, ${item.expirationDate})`).join('; '),
+      items: group.items
+    }))
+  };
+}
+
+async function sendWorkerReminderEmails(store, options = {}) {
+  const settings = getEmailAlertSettings(store);
+  const testMode = options.testMode === true;
+  const force = options.force === true;
+  const testRecipient = normalizeEmail(options.testRecipient || settings.testRecipient || process.env.ALERTS_TO || process.env.SMTP_USER || '');
+
+  if (!testMode && !settings.workerAlertsEnabled && !force) {
+    return { sent: 0, skipped: 0, message: 'Worker email alerts are turned off.' };
+  }
+
+  const preview = workerReminderPreview(store);
+  const groups = preview.rows;
+  const transporter = createMailTransporter();
+  const from = process.env.ALERTS_FROM || process.env.SMTP_USER;
+  const sent = [];
+  const skipped = [];
+
+  if (testMode) {
+    if (!isValidEmail(testRecipient)) throw new Error('A valid test recipient email is required.');
+    const sample = groups[0] || {
+      workerName: 'Sample Worker',
+      email: testRecipient,
+      hasValidEmail: true,
+      items: [{ certName: 'Sample Certification', status: 'Expiring Soon', expirationDate: 'YYYY-MM-DD', reason: '30 day(s) until expiration' }]
+    };
+    const body = buildWorkerReminderBody(sample, true);
+    const subject = `JAGD Test Worker Alert — ${sample.workerName || 'Sample Worker'}`;
+    await transporter.sendMail({ from, to: testRecipient, subject, text: body });
+    settings.lastWorkerTestAt = auditTimestamp();
+    store.meta.emailAlerts = settings;
+    return { sent: 1, skipped: 0, to: testRecipient, subject, message: `Test worker alert sent to ${testRecipient}.` };
+  }
+
+  for (const group of groups) {
+    if (!group.hasValidEmail) {
+      skipped.push({ workerName: group.workerName, reason: 'Missing worker email' });
+      continue;
+    }
+    const subject = `JAGD Certification Reminder — ${group.itemCount} item(s) need attention`;
+    const body = buildWorkerReminderBody(group, false);
+    await transporter.sendMail({ from, to: group.email, subject, text: body });
+    sent.push({ workerName: group.workerName, email: group.email, itemCount: group.itemCount });
+  }
+
+  settings.lastWorkerManualRunAt = auditTimestamp();
+  store.meta.emailAlerts = settings;
+  return { sent: sent.length, skipped: skipped.length, sentRows: sent, skippedRows: skipped };
+}
+
 
 function makeWorkerPortalUsername(worker, used = new Set()) {
   const first = String(worker.firstName || '').trim().toLowerCase();
@@ -349,6 +556,7 @@ function readStore() {
     store.auditLog = [];
     writeStore(store);
   }
+  getEmailAlertSettings(store);
   if (store.workers) {
     let changed = false;
     store.workers = store.workers.map((worker, index) => {
@@ -670,6 +878,7 @@ app.post('/api/workers', (req, res) => {
     status: body.status || 'Needs Attention',
     nextIssue: body.nextIssue || 'Review worker',
     employmentStatus: body.employmentStatus || 'Active',
+    email: normalizeEmail(body.email || body.workerEmail || ''),
     notes: body.notes || '',
     certifications: body.certifications || [],
     bloodwork: body.bloodwork || [],
@@ -695,7 +904,8 @@ app.put('/api/workers/:id', (req, res) => {
     notes: body.notes ?? existing.notes,
     nextIssue: body.nextIssue ?? existing.nextIssue,
     crew: body.crew ?? existing.crew,
-    currentJob: body.currentJob ?? existing.currentJob
+    currentJob: body.currentJob ?? existing.currentJob,
+    email: body.email !== undefined ? normalizeEmail(body.email) : (existing.email || '')
   };
   appendAuditLog(store, req, 'Updated worker', `${store.workers[idx].name} → ${store.workers[idx].employmentStatus}`, { workerId: store.workers[idx].id, workerName: store.workers[idx].name });
   writeStore(store);
@@ -1154,6 +1364,31 @@ function startDigestScheduler() {
   }
 }
 
+let workerAlertSchedulerStarted = false;
+
+function startWorkerAlertScheduler() {
+  if (workerAlertSchedulerStarted) return;
+  workerAlertSchedulerStarted = true;
+  setInterval(async () => {
+    try {
+      const store = readStore();
+      const settings = getEmailAlertSettings(store);
+      if (!settings.workerAlertsEnabled) return;
+      if (hourNY() !== settings.sendHour) return;
+      const todayKey = dateKeyNY();
+      if (settings.lastWorkerAutoRunDate === todayKey) return;
+      const result = await sendWorkerReminderEmails(store, { force: false });
+      settings.lastWorkerAutoRunDate = todayKey;
+      store.meta.emailAlerts = settings;
+      appendAuditLog(store, { headers: { 'x-actor-username': 'system', 'x-actor-role': 'System', 'x-actor-name': 'System' } }, 'Auto-sent worker alert emails', `${result.sent || 0} sent, ${result.skipped || 0} skipped`);
+      writeStore(store);
+    } catch (err) {
+      console.error('Worker alert scheduler failed', err);
+    }
+  }, 60 * 60 * 1000);
+  console.log('Worker alert scheduler started. Worker emails only send when Admin toggle is ON.');
+}
+
 function buildOfficeDigest(store) {
   const recipients = process.env.ALERTS_TO || process.env.SMTP_USER || '';
   return {
@@ -1179,13 +1414,7 @@ async function sendTestDigestEmail(store) {
     throw new Error('Missing SMTP environment variables.');
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: false,
-    auth: { user, pass },
-    tls: { minVersion: 'TLSv1.2' }
-  });
+  const transporter = createMailTransporter();
 
   const subject = `JAGD Test Digest — ${new Date().toLocaleString()}`;
   const text = buildOfficeDigestText(store);
@@ -1409,10 +1638,70 @@ app.post('/api/access-users/:username/reset-password', (req, res) => {
 });
 
 
+app.get('/api/email-alerts/worker-preview', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const store = readStore();
+  res.json(workerReminderPreview(store));
+});
+
+app.put('/api/email-alerts/settings', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const store = readStore();
+  const settings = getEmailAlertSettings(store);
+  const body = req.body || {};
+
+  if (typeof body.workerAlertsEnabled === 'boolean') settings.workerAlertsEnabled = body.workerAlertsEnabled;
+  if (typeof body.officeDigestEnabled === 'boolean') settings.officeDigestEnabled = body.officeDigestEnabled;
+  if (body.testRecipient !== undefined) settings.testRecipient = normalizeEmail(body.testRecipient || '');
+  if (Array.isArray(body.reminderDays)) {
+    const cleaned = body.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0 && n <= 365);
+    settings.reminderDays = cleaned.length ? [...new Set(cleaned)].sort((a, b) => b - a) : [30];
+  }
+
+  store.meta.emailAlerts = settings;
+  appendAuditLog(store, req, 'Updated worker email alert settings', settings.workerAlertsEnabled ? 'Worker email alerts ON' : 'Worker email alerts OFF');
+  writeStore(store);
+  res.json({ ok: true, settings, preview: workerReminderPreview(store) });
+});
+
+app.post('/api/email-alerts/send-test-worker', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const store = readStore();
+    const result = await sendWorkerReminderEmails(store, {
+      testMode: true,
+      testRecipient: req.body?.testRecipient
+    });
+    appendAuditLog(store, req, 'Sent test worker alert', result.to || 'Test recipient not set');
+    writeStore(store);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to send test worker alert.' });
+  }
+});
+
+app.post('/api/email-alerts/send-worker-now', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const store = readStore();
+    const result = await sendWorkerReminderEmails(store, { force: true });
+    appendAuditLog(store, req, 'Sent worker alert emails', `${result.sent || 0} sent, ${result.skipped || 0} skipped`);
+    writeStore(store);
+    res.json({ ok: true, ...result, message: `${result.sent || 0} worker reminder email(s) sent. ${result.skipped || 0} skipped.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to send worker alert emails.' });
+  }
+});
+
 app.get('/api/admin', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const store = readStore();
+  const emailPreview = workerReminderPreview(store);
   res.json({
+    emailAlerts: emailPreview.settings,
+    workerEmailPreview: emailPreview,
     baselineRequirements: store.meta?.baselineRequirements || [],
     reminderRules: store.meta?.reminderRules || [],
     managedAccounts: managedPortalAccounts(store),
@@ -1436,6 +1725,7 @@ app.get('*', (req, res) => {
 });
 
 startDigestScheduler();
+startWorkerAlertScheduler();
 
 app.listen(PORT, () => {
   console.log(`JAGD portal running on http://localhost:${PORT}`);

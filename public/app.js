@@ -11,6 +11,7 @@ const state = {
   dashboard: null,
   bloodwork: [],
   admin: null,
+  workerEmailPreview: null,
   certs: [],
   certsSource: '',
   employeeFilter: 'all',
@@ -473,6 +474,12 @@ function selectedWorkerSection() {
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
           <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
+          <div class="small muted" style="margin-top:14px;">Worker Email Alerts</div>
+          <div class="grid grid-2" style="margin-top:8px;">
+            <input id="profileWorkerEmail" value="${escapeHtml(worker.email || '')}" placeholder="worker@email.com" ${!canManageWorkers() ? 'disabled' : ''} />
+            ${canManageWorkers() ? '<button class="btn dark" id="saveWorkerEmailBtn">Save Email</button>' : '<div class="small muted" style="display:flex;align-items:center;">Admin only</div>'}
+          </div>
+          <div class="small muted" style="margin-top:8px;">Only active workers with an email address can receive automatic worker alerts.</div>
         </div>
         <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
       <div class="section table-wrap">
@@ -1010,6 +1017,38 @@ function reportsView() {
 }
 
 
+function workerEmailPreviewText() {
+  const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
+  const rows = preview.rows || [];
+  const settings = state.admin?.emailAlerts || preview.settings || {};
+  const lines = [
+    'JAGD Worker Email Alert Preview',
+    '',
+    `Status: ${settings.workerAlertsEnabled ? 'ON' : 'OFF'}`,
+    `Workers with alerts: ${preview.totalWorkersWithAlerts || 0}`,
+    `Workers with valid email: ${preview.workersWithValidEmail || 0}`,
+    `Workers missing email: ${preview.workersMissingEmail || 0}`,
+    '',
+    ...(rows.length ? rows.slice(0, 20).map(row => `- ${row.workerName}: ${row.hasValidEmail ? row.email : 'MISSING EMAIL'} · ${row.summary}`) : ['- No worker email alerts right now.'])
+  ];
+  return lines.join('\n');
+}
+
+function workerEmailPreviewTable() {
+  const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
+  const rows = preview.rows || [];
+  if (!rows.length) return '<div class="muted">No worker email alerts are currently ready.</div>';
+  return `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Email</th><th>Items</th><th>Summary</th><th>Action</th></tr></thead><tbody>
+    ${rows.slice(0, 50).map(row => `<tr>
+      <td>${escapeHtml(row.workerName || '-')}</td>
+      <td>${row.hasValidEmail ? `<span class="badge bg-green">${escapeHtml(row.email)}</span>` : '<span class="badge bg-red">Missing Email</span>'}</td>
+      <td>${row.itemCount || 0}</td>
+      <td>${escapeHtml(row.summary || '-')}</td>
+      <td>${row.workerId ? `<span class="link" data-open-worker="${row.workerId}">Open Profile</span>` : '-'}</td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+
 function officeDigestPreviewText() {
   const alerts = liveAlerts();
   const lines = [
@@ -1043,22 +1082,48 @@ function adminView() {
       <div class="card">
         <h2>Email Alert Settings</h2>
         <div class="section">
-          <div class="tag"><strong>Office Daily Digest:</strong> Scheduled Daily at 6:00 AM ET</div>
-          <div class="tag"><strong>Current Recipient:</strong> Alerts@jagdapps.com</div>
-          <div class="tag"><strong>Suggested Send Time:</strong> 6:00 AM</div>
-          <div class="tag"><strong>Employee Email Alerts:</strong> Hold for Phase 2</div>
+          <div class="tag"><strong>Office Daily Digest:</strong> Test button available</div>
+          <div class="tag"><strong>Worker Email Alerts:</strong> ${state.admin?.emailAlerts?.workerAlertsEnabled ? 'ON' : 'OFF'}</div>
+          <div class="tag"><strong>Worker Schedule:</strong> Daily around ${(state.admin?.emailAlerts?.sendHour ?? 6)}:00 AM ET when enabled</div>
+          <div class="tag"><strong>Reminder Window:</strong> ${(state.admin?.emailAlerts?.reminderDays || [30]).join(', ')} day(s)</div>
         </div>
-        <div class="small muted">Daily office digest is now configured. Use Send Test Digest any time to verify delivery.</div>
+        <div class="section grid grid-2">
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Test Recipient</div>
+            <input id="workerAlertTestRecipient" value="${escapeHtml(state.admin?.emailAlerts?.testRecipient || '')}" placeholder="test@email.com" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Worker Alerts Master Toggle</div>
+            <select id="workerAlertsEnabled">
+              <option value="false" ${state.admin?.emailAlerts?.workerAlertsEnabled ? '' : 'selected'}>OFF - Safe Mode</option>
+              <option value="true" ${state.admin?.emailAlerts?.workerAlertsEnabled ? 'selected' : ''}>ON - Send Automatically</option>
+            </select>
+          </div>
+        </div>
+        <div class="small muted section">Safe testing: Send Test Worker Alert emails only the test recipient. It does not email real workers. Send Worker Emails Now uses real worker emails and should only be used after preview looks right.</div>
         <div class="section button-row">
-          <button class="btn dark" id="sendTestDigestBtn">Send Test Digest</button>
+          <button class="btn dark" id="saveWorkerAlertSettingsBtn">Save Email Settings</button>
+          <button class="btn light" id="sendTestWorkerAlertBtn">Send Test Worker Alert</button>
+          <button class="btn light" id="sendWorkerEmailsNowBtn">Send Worker Emails Now</button>
+          <button class="btn light" id="sendTestDigestBtn">Send Office Test Digest</button>
           <div id="sendTestDigestStatus" class="small muted"></div>
         </div>
       </div>
       <div class="card">
-        <h2>Office Digest Preview</h2>
-        <div class="small muted">This is what the office daily digest would look like based on the current alert data.</div>
-        <textarea rows="12" style="width:100%; margin-top:12px;">${escapeHtml(officeDigestPreviewText())}</textarea>
+        <h2>Worker Alert Preview</h2>
+        <div class="small muted">Shows who would receive worker email reminders. Missing email workers are skipped until an email is added to their profile.</div>
+        <div class="section">
+          <div class="tag"><strong>Workers With Alerts:</strong> ${state.workerEmailPreview?.totalWorkersWithAlerts || state.admin?.workerEmailPreview?.totalWorkersWithAlerts || 0}</div>
+          <div class="tag"><strong>Valid Emails:</strong> ${state.workerEmailPreview?.workersWithValidEmail || state.admin?.workerEmailPreview?.workersWithValidEmail || 0}</div>
+          <div class="tag"><strong>Missing Emails:</strong> ${state.workerEmailPreview?.workersMissingEmail || state.admin?.workerEmailPreview?.workersMissingEmail || 0}</div>
+        </div>
+        <textarea rows="10" style="width:100%; margin-top:12px;">${escapeHtml(workerEmailPreviewText())}</textarea>
       </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header"><div><h2>Worker Email Alert Preview List</h2><div class="sub">Review real worker alert rows before turning on automatic worker emails.</div></div></div>
+      <div class="section">${workerEmailPreviewTable()}</div>
     </div>
   `);
 }
@@ -1072,6 +1137,7 @@ function renderWorkerModal() {
         <input id="newWorkerFirst" placeholder="First name" />
         <input id="newWorkerLast" placeholder="Last name" />
         <input id="newWorkerCrew" placeholder="Crew" value="Bridge Painting" />
+        <input id="newWorkerEmail" placeholder="Worker email address (optional)" />
         <select id="newWorkerStatus"><option>Qualified</option><option>Expiring Soon</option><option>Needs Attention</option></select>
         <select id="newWorkerEmploymentStatus"><option>Active</option><option>Inactive</option><option>Terminated</option><option>Archived</option></select>
         <input id="newWorkerIssue" placeholder="Next issue" />
@@ -1282,6 +1348,7 @@ async function refreshData() {
   state.accessUsers = canViewAdmin() ? await api('/api/access-users') : [];
   state.auditLog = await api('/api/audit-log?limit=150');
   state.admin = canViewAdmin() ? await api('/api/admin') : null;
+  state.workerEmailPreview = state.admin?.workerEmailPreview || null;
   const certPayload = await api('/api/certs');
   state.certs = certPayload.certs || [];
   state.certsSource = certPayload.workbookSource || '';
@@ -1364,6 +1431,58 @@ function bindEvents() {
     }
   });
 
+
+  document.getElementById('saveWorkerAlertSettingsBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('sendTestDigestStatus');
+    if (status) status.textContent = 'Saving email settings...';
+    try {
+      const enabled = document.getElementById('workerAlertsEnabled')?.value === 'true';
+      const testRecipient = document.getElementById('workerAlertTestRecipient')?.value || '';
+      const result = await api('/api/email-alerts/settings', {
+        method: 'PUT',
+        body: { workerAlertsEnabled: enabled, testRecipient, reminderDays: [30] }
+      });
+      state.workerEmailPreview = result.preview || null;
+      if (status) status.textContent = 'Email settings saved.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to save email settings.';
+    }
+  });
+
+  document.getElementById('sendTestWorkerAlertBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('sendTestDigestStatus');
+    if (status) status.textContent = 'Sending safe test worker alert...';
+    try {
+      const testRecipient = document.getElementById('workerAlertTestRecipient')?.value || '';
+      const result = await api('/api/email-alerts/send-test-worker', {
+        method: 'POST',
+        body: { testRecipient }
+      });
+      if (status) status.textContent = result.message || 'Test worker alert sent.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to send test worker alert.';
+    }
+  });
+
+  document.getElementById('sendWorkerEmailsNowBtn')?.addEventListener('click', async () => {
+    const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
+    const sendCount = preview.workersWithValidEmail || 0;
+    if (!confirm(`Send real worker alert email(s) now to ${sendCount} worker(s) with valid email addresses?`)) return;
+    const status = document.getElementById('sendTestDigestStatus');
+    if (status) status.textContent = 'Sending worker emails...';
+    try {
+      const result = await api('/api/email-alerts/send-worker-now', { method: 'POST' });
+      if (status) status.textContent = result.message || 'Worker emails sent.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to send worker emails.';
+    }
+  });
 
   document.getElementById('workerUploadBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('workerUploadStatus');
@@ -1554,6 +1673,17 @@ function bindEvents() {
   document.getElementById('profileCurrentJob')?.addEventListener('change', async (e) => {
     if (!state.selectedWorkerId) return;
     await api('/api/workers/' + state.selectedWorkerId, { method: 'PUT', body: { currentJob: e.target.value } });
+    await refreshData();
+    render();
+  });
+
+  document.getElementById('saveWorkerEmailBtn')?.addEventListener('click', async () => {
+    const worker = state.workers.find(w => w.id === state.selectedWorkerId);
+    if (!worker) return;
+    await api('/api/workers/' + worker.id, {
+      method: 'PUT',
+      body: { email: document.getElementById('profileWorkerEmail')?.value || '' }
+    });
     await refreshData();
     render();
   });
@@ -1803,6 +1933,7 @@ document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEvent
         firstName: document.getElementById('newWorkerFirst').value,
         lastName: document.getElementById('newWorkerLast').value,
         crew: document.getElementById('newWorkerCrew').value,
+        email: document.getElementById('newWorkerEmail').value,
         status: document.getElementById('newWorkerStatus').value,
         employmentStatus: document.getElementById('newWorkerEmploymentStatus').value,
         nextIssue: document.getElementById('newWorkerIssue').value,
