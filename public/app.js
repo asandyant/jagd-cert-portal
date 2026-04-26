@@ -852,158 +852,23 @@ function uploadsView() {
   `);
 }
 
-
-function expiringWorkersReport() {
-  const rows = [];
-  (state.workers || []).forEach(worker => {
-    (worker.certifications || []).forEach(cert => {
-      const status = String(cert.status || '');
-      if (status.includes('Expiring')) {
-        rows.push({
-          workerName: worker.name,
-          certName: cert.name,
-          expirationDate: cert.date || '-',
-          status: cert.status || 'Expiring Soon',
-          currentJob: currentJobDisplay(worker)
-        });
-      }
-    });
-  });
-  return rows.sort((a, b) => String(a.expirationDate).localeCompare(String(b.expirationDate)));
-}
-
-function bloodworkDueReport() {
-  return (state.bloodwork || [])
-    .filter(row => {
-      const status = String(row.status || '');
-      return status.includes('Due') || status.includes('Overdue') || status.includes('Attention');
-    })
-    .map(row => ({
-      workerName: row.workerName,
-      testDate: row.testDate || '-',
-      nextDue: row.nextDue || '-',
-      bll: row.bll || '-',
-      zpp: row.zpp || '-',
-      status: row.status || 'Due Soon',
-      currentJob: currentJobDisplay((state.workers || []).find(w => String(w.id) === String(row.workerId)) || {})
-    }))
-    .sort((a, b) => String(a.nextDue).localeCompare(String(b.nextDue)));
-}
-
-function missingBaselineReport() {
-  const baseline = state.admin?.baselineRequirements || ['OSHA 30','Training Pack','Lead Awareness','Fit Test'];
-  return (state.workers || [])
-    .filter(worker => (worker.employmentStatus || 'Active') === 'Active')
-    .map(worker => {
-      const certNames = new Set((worker.certifications || []).map(cert => String(cert.name || '').trim().toLowerCase()));
-      const missing = baseline.filter(req => !certNames.has(String(req).trim().toLowerCase()));
-      return {
-        workerName: worker.name,
-        missing,
-        currentJob: currentJobDisplay(worker),
-        status: worker.status || 'Needs Attention'
-      };
-    })
-    .filter(row => row.missing.length);
-}
-
-function selectedJobReadyReport() {
-  const job = state.jobs.find(j => j.id === state.selectedJobId) || state.jobs[0] || null;
-  if (!job) return { job: null, workers: [] };
-  return {
-    job,
-    workers: (job.buckets?.qualified || []).map(worker => ({
-      workerName: worker.name,
-      currentJob: currentJobDisplay(worker),
-      status: worker.status || 'Qualified',
-      nextIssue: worker.nextIssue || '-'
-    }))
-  };
-}
-
 function reportsView() {
-  const expiringRows = expiringWorkersReport();
-  const bloodworkRows = bloodworkDueReport();
-  const baselineRows = missingBaselineReport();
-  const readyReport = selectedJobReadyReport();
-
   return layout(`
     <div class="grid grid-2">
       <div class="card">
         <h2>Reports & Exports</h2>
         <div class="section kpi-grid">
-          <div class="kpi" style="background:#f8fafc;">
-            <div style="font-weight:700;">Expiring in 30 Days</div>
-            <div class="small muted" style="margin-top:8px;">${expiringRows.length} worker certification record(s)</div>
-          </div>
-          <div class="kpi" style="background:#f8fafc;">
-            <div style="font-weight:700;">Job Ready Crew List</div>
-            <div class="small muted" style="margin-top:8px;">${readyReport.workers.length} qualified worker(s) for selected job</div>
-          </div>
-          <div class="kpi" style="background:#f8fafc;">
-            <div style="font-weight:700;">Bloodwork Due List</div>
-            <div class="small muted" style="margin-top:8px;">${bloodworkRows.length} due or overdue bloodwork record(s)</div>
-          </div>
-          <div class="kpi" style="background:#f8fafc;">
-            <div style="font-weight:700;">Missing Baseline Items</div>
-            <div class="small muted" style="margin-top:8px;">${baselineRows.length} active worker(s) missing baseline items</div>
-          </div>
+          ${[
+            'Expiring in 30 Days',
+            'Job Ready Crew List',
+            'Bloodwork Due List',
+            'Missing Baseline Items'
+          ].map(r=>`<div class="kpi" style="background:#f8fafc;"><div style="font-weight:700;">${r}</div><div class="small muted" style="margin-top:8px;">Open report placeholder</div></div>`).join('')}
         </div>
       </div>
       <div class="card">
         <h2>Notifications Center</h2>
-        <div class="section">${(state.auditLog || []).slice(0,6).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}</div>`).join('')}</div>
-      </div>
-    </div>
-
-    <div class="card section">
-      <div class="card-header">
-        <div><h2>Expiring in 30 Days</h2><div class="sub">Workers with certification records marked expiring soon.</div></div>
-        <div class="pill">${expiringRows.length} row(s)</div>
-      </div>
-      <div class="section">
-        ${expiringRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Certification</th><th>Expiration</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
-          ${expiringRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${escapeHtml(row.certName)}</td><td>${escapeHtml(row.expirationDate)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
-        </tbody></table></div>` : '<div class="muted">No expiring certification records right now.</div>'}
-      </div>
-    </div>
-
-    <div class="card section">
-      <div class="card-header">
-        <div><h2>Bloodwork Due List</h2><div class="sub">Workers with bloodwork records that are due, overdue, or need attention.</div></div>
-        <div class="pill">${bloodworkRows.length} row(s)</div>
-      </div>
-      <div class="section">
-        ${bloodworkRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
-          ${bloodworkRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${escapeHtml(row.testDate)}</td><td>${escapeHtml(row.nextDue)}</td><td>${escapeHtml(row.bll)}</td><td>${escapeHtml(row.zpp)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
-        </tbody></table></div>` : '<div class="muted">No bloodwork due records right now.</div>'}
-      </div>
-    </div>
-
-    <div class="card section">
-      <div class="card-header">
-        <div><h2>Missing Baseline Items</h2><div class="sub">Active workers missing one or more required baseline certifications.</div></div>
-        <div class="pill">${baselineRows.length} row(s)</div>
-      </div>
-      <div class="section">
-        ${baselineRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Missing Items</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
-          ${baselineRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${row.missing.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
-        </tbody></table></div>` : '<div class="muted">No active workers are missing baseline items right now.</div>'}
-      </div>
-    </div>
-
-    <div class="card section">
-      <div class="card-header">
-        <div><h2>Job Ready Crew List</h2><div class="sub">Qualified workers for the currently selected job.</div></div>
-        <div class="pill">${readyReport.job ? escapeHtml(readyReport.job.name) : 'No Job Selected'}</div>
-      </div>
-      <div class="section">
-        ${state.jobs?.length ? `<select id="reportJobSelector">${state.jobs.map(job => `<option value="${job.id}" ${readyReport.job && job.id===readyReport.job.id ? 'selected' : ''}>${escapeHtml(job.name)} · ${escapeHtml(job.owner || '-')}</option>`).join('')}</select>` : ''}
-      </div>
-      <div class="section">
-        ${readyReport.workers.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Status</th><th>Current Job</th><th>Next Issue</th></tr></thead><tbody>
-          ${readyReport.workers.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td><td>${escapeHtml(row.nextIssue)}</td></tr>`).join('')}
-        </tbody></table></div>` : '<div class="muted">No qualified workers found for the selected job.</div>'}
+        <div class="section">${(state.auditLog || []).slice(0,4).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}</div>`).join('')}</div>
       </div>
     </div>
   `);
@@ -1124,6 +989,18 @@ function formatAuditTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleString();
+}
+
+function displayAuditRole(row) {
+  const directRole = String(row?.actorRole || row?.role || '').trim();
+  if (directRole && directRole !== '-') return directRole;
+
+  const username = String(row?.actorUsername || '').trim().toLowerCase();
+  if (!username || username === 'system') return '-';
+  if (username === 'admin') return 'Admin';
+  if (username === 'office') return 'Office';
+  if (username === 'pm') return 'PM';
+  return 'Worker';
 }
 
 
@@ -1330,14 +1207,6 @@ function bindEvents() {
     state.user = null;
     render();
   });
-
-  document.getElementById('reportJobSelector')?.addEventListener('change', async (e) => {
-    state.selectedJobId = e.target.value;
-    await refreshData();
-    state.view = 'reports';
-    render();
-  });
-
 
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('sendTestDigestStatus');
