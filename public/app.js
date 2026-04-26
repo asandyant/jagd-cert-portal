@@ -138,33 +138,6 @@ function normalizeAlertFeed(alerts) {
   });
 }
 
-
-function roleSnapshotTitle() {
-  const role = String(state.user?.role || '');
-  if (role === 'Admin') return 'Admin Snapshot';
-  if (role === 'Office') return 'Office Snapshot';
-  if (role === 'PM') return 'PM Snapshot';
-  return 'Executive Snapshot';
-}
-
-function roleSnapshotText() {
-  const role = String(state.user?.role || '');
-  if (role === 'Admin') {
-    return 'You have full access to workers, jobs, certifications, bloodwork, uploads, portal access, history, reports, and admin tools. Use this role for system management, account changes, deletions, and permission updates.';
-  }
-  if (role === 'Office') {
-    return 'You can manage certifications, bloodwork, uploads, reports, and worker records needed for office support. Use Office for record updates and upload intake. If account access or permissions need to be changed, contact an Admin.';
-  }
-  if (role === 'PM') {
-    return 'PM access is designed for field readiness and job support. You can review worker readiness, jobs, certifications, uploads, reports, and bloodwork visibility needed before work starts. PMs should use this portal to verify status, but contact Office or an Admin for bloodwork updates, permission changes, record deletions, or account issues.';
-  }
-  return 'This version includes real imported worker names, current jobs, worker readiness, uploads, reports, and a working backend.';
-}
-
-function workerPortalInstructions() {
-  return 'Use this portal to review your certifications and upload new certification documents one at a time. Select the correct certification, attach the file, and enter the expiration date before submitting. If something is missing or incorrect, contact the office or an Admin.';
-}
-
 function liveAlerts() {
   const normalized = normalizeAlertFeed(state.alerts || []);
   return normalized.length ? normalized : buildFallbackAlerts();
@@ -200,7 +173,7 @@ function layout(content) {
     ['admin', 'Admin']
   ];
   const visibleNav = navItems.filter(([id]) => {
-    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','bloodwork','alerts','uploads','reports'].includes(id);
+    if (state.user?.role === 'PM') return ['dashboard','employees','jobs','certs','alerts','uploads','history','reports'].includes(id);
     if (state.user?.role === 'Office') return ['dashboard','employees','jobs','certs','bloodwork','alerts','uploads','history','reports'].includes(id);
     if (state.user?.role === 'Admin') return true;
     return id !== 'access' && id !== 'admin';
@@ -219,8 +192,8 @@ function layout(content) {
           </div>
         </div>
         <div class="snapshot">
-          <div class="small" style="color:#cbd5e1;">${roleSnapshotTitle()}</div>
-          <div class="sub" style="color:#cbd5e1;">${roleSnapshotText()}</div>
+          <div class="small" style="color:#cbd5e1;">Executive Snapshot</div>
+          <div class="sub" style="color:#cbd5e1;">This version includes real imported worker names, 30 current jobs, job requirement editing, add worker/add job, and a working backend.</div>
         </div>
         <div class="nav">
           ${visibleNav.map(([id,label]) => `<button class="${state.view===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}
@@ -580,10 +553,7 @@ function workerPortalView() {
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue. Choose the certification, attach the file, and enter the expiration date before submitting.</div></div></div>
-            <div class="section">
-              <div class="tag">${workerPortalInstructions()}</div>
-            </div>
+            <div class="card-header"><div><h2>Upload My Certification</h2><div class="sub">Uploads go into the office review queue. Choose the certification and file before submitting.</div></div></div>
             <div class="section grid grid-2">
               <input id="workerUploadFileName" placeholder="Record name (example: Fit_Test.pdf)" />
               <input id="workerUploadFilePicker" type="file" accept=".pdf,image/*" />
@@ -882,23 +852,158 @@ function uploadsView() {
   `);
 }
 
+
+function expiringWorkersReport() {
+  const rows = [];
+  (state.workers || []).forEach(worker => {
+    (worker.certifications || []).forEach(cert => {
+      const status = String(cert.status || '');
+      if (status.includes('Expiring')) {
+        rows.push({
+          workerName: worker.name,
+          certName: cert.name,
+          expirationDate: cert.date || '-',
+          status: cert.status || 'Expiring Soon',
+          currentJob: currentJobDisplay(worker)
+        });
+      }
+    });
+  });
+  return rows.sort((a, b) => String(a.expirationDate).localeCompare(String(b.expirationDate)));
+}
+
+function bloodworkDueReport() {
+  return (state.bloodwork || [])
+    .filter(row => {
+      const status = String(row.status || '');
+      return status.includes('Due') || status.includes('Overdue') || status.includes('Attention');
+    })
+    .map(row => ({
+      workerName: row.workerName,
+      testDate: row.testDate || '-',
+      nextDue: row.nextDue || '-',
+      bll: row.bll || '-',
+      zpp: row.zpp || '-',
+      status: row.status || 'Due Soon',
+      currentJob: currentJobDisplay((state.workers || []).find(w => String(w.id) === String(row.workerId)) || {})
+    }))
+    .sort((a, b) => String(a.nextDue).localeCompare(String(b.nextDue)));
+}
+
+function missingBaselineReport() {
+  const baseline = state.admin?.baselineRequirements || ['OSHA 30','Training Pack','Lead Awareness','Fit Test'];
+  return (state.workers || [])
+    .filter(worker => (worker.employmentStatus || 'Active') === 'Active')
+    .map(worker => {
+      const certNames = new Set((worker.certifications || []).map(cert => String(cert.name || '').trim().toLowerCase()));
+      const missing = baseline.filter(req => !certNames.has(String(req).trim().toLowerCase()));
+      return {
+        workerName: worker.name,
+        missing,
+        currentJob: currentJobDisplay(worker),
+        status: worker.status || 'Needs Attention'
+      };
+    })
+    .filter(row => row.missing.length);
+}
+
+function selectedJobReadyReport() {
+  const job = state.jobs.find(j => j.id === state.selectedJobId) || state.jobs[0] || null;
+  if (!job) return { job: null, workers: [] };
+  return {
+    job,
+    workers: (job.buckets?.qualified || []).map(worker => ({
+      workerName: worker.name,
+      currentJob: currentJobDisplay(worker),
+      status: worker.status || 'Qualified',
+      nextIssue: worker.nextIssue || '-'
+    }))
+  };
+}
+
 function reportsView() {
+  const expiringRows = expiringWorkersReport();
+  const bloodworkRows = bloodworkDueReport();
+  const baselineRows = missingBaselineReport();
+  const readyReport = selectedJobReadyReport();
+
   return layout(`
     <div class="grid grid-2">
       <div class="card">
         <h2>Reports & Exports</h2>
         <div class="section kpi-grid">
-          ${[
-            'Expiring in 30 Days',
-            'Job Ready Crew List',
-            'Bloodwork Due List',
-            'Missing Baseline Items'
-          ].map(r=>`<div class="kpi" style="background:#f8fafc;"><div style="font-weight:700;">${r}</div><div class="small muted" style="margin-top:8px;">Open report placeholder</div></div>`).join('')}
+          <div class="kpi" style="background:#f8fafc;">
+            <div style="font-weight:700;">Expiring in 30 Days</div>
+            <div class="small muted" style="margin-top:8px;">${expiringRows.length} worker certification record(s)</div>
+          </div>
+          <div class="kpi" style="background:#f8fafc;">
+            <div style="font-weight:700;">Job Ready Crew List</div>
+            <div class="small muted" style="margin-top:8px;">${readyReport.workers.length} qualified worker(s) for selected job</div>
+          </div>
+          <div class="kpi" style="background:#f8fafc;">
+            <div style="font-weight:700;">Bloodwork Due List</div>
+            <div class="small muted" style="margin-top:8px;">${bloodworkRows.length} due or overdue bloodwork record(s)</div>
+          </div>
+          <div class="kpi" style="background:#f8fafc;">
+            <div style="font-weight:700;">Missing Baseline Items</div>
+            <div class="small muted" style="margin-top:8px;">${baselineRows.length} active worker(s) missing baseline items</div>
+          </div>
         </div>
       </div>
       <div class="card">
         <h2>Notifications Center</h2>
-        <div class="section">${(state.auditLog || []).slice(0,4).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}</div>`).join('')}</div>
+        <div class="section">${(state.auditLog || []).slice(0,6).map(row=>`<div class="tag">${formatAuditTime(row.time)} — ${escapeHtml(row.action || '-')}</div>`).join('')}</div>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Expiring in 30 Days</h2><div class="sub">Workers with certification records marked expiring soon.</div></div>
+        <div class="pill">${expiringRows.length} row(s)</div>
+      </div>
+      <div class="section">
+        ${expiringRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Certification</th><th>Expiration</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
+          ${expiringRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${escapeHtml(row.certName)}</td><td>${escapeHtml(row.expirationDate)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="muted">No expiring certification records right now.</div>'}
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Bloodwork Due List</h2><div class="sub">Workers with bloodwork records that are due, overdue, or need attention.</div></div>
+        <div class="pill">${bloodworkRows.length} row(s)</div>
+      </div>
+      <div class="section">
+        ${bloodworkRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
+          ${bloodworkRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${escapeHtml(row.testDate)}</td><td>${escapeHtml(row.nextDue)}</td><td>${escapeHtml(row.bll)}</td><td>${escapeHtml(row.zpp)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="muted">No bloodwork due records right now.</div>'}
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Missing Baseline Items</h2><div class="sub">Active workers missing one or more required baseline certifications.</div></div>
+        <div class="pill">${baselineRows.length} row(s)</div>
+      </div>
+      <div class="section">
+        ${baselineRows.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Missing Items</th><th>Status</th><th>Current Job</th></tr></thead><tbody>
+          ${baselineRows.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${row.missing.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('')}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="muted">No active workers are missing baseline items right now.</div>'}
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Job Ready Crew List</h2><div class="sub">Qualified workers for the currently selected job.</div></div>
+        <div class="pill">${readyReport.job ? escapeHtml(readyReport.job.name) : 'No Job Selected'}</div>
+      </div>
+      <div class="section">
+        ${state.jobs?.length ? `<select id="reportJobSelector">${state.jobs.map(job => `<option value="${job.id}" ${readyReport.job && job.id===readyReport.job.id ? 'selected' : ''}>${escapeHtml(job.name)} · ${escapeHtml(job.owner || '-')}</option>`).join('')}</select>` : ''}
+      </div>
+      <div class="section">
+        ${readyReport.workers.length ? `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Status</th><th>Current Job</th><th>Next Issue</th></tr></thead><tbody>
+          ${readyReport.workers.map(row => `<tr><td>${escapeHtml(row.workerName)}</td><td>${badge(row.status)}</td><td>${escapeHtml(row.currentJob)}</td><td>${escapeHtml(row.nextIssue)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="muted">No qualified workers found for the selected job.</div>'}
       </div>
     </div>
   `);
@@ -1019,17 +1124,6 @@ function formatAuditTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleString();
-}
-
-function displayAuditRole(row) {
-  const directRole = String(row?.actorRole || row?.role || '').trim();
-  if (directRole && directRole !== '-') return directRole;
-  const username = String(row?.actorUsername || '').trim().toLowerCase();
-  if (!username || username === 'system') return '-';
-  if (username === 'admin') return 'Admin';
-  if (username === 'office') return 'Office';
-  if (username === 'pm') return 'PM';
-  return 'Worker';
 }
 
 
@@ -1237,6 +1331,14 @@ function bindEvents() {
     render();
   });
 
+  document.getElementById('reportJobSelector')?.addEventListener('change', async (e) => {
+    state.selectedJobId = e.target.value;
+    await refreshData();
+    state.view = 'reports';
+    render();
+  });
+
+
   document.getElementById('sendTestDigestBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('sendTestDigestStatus');
     if (status) status.textContent = 'Sending...';
@@ -1262,10 +1364,8 @@ function bindEvents() {
       const selectedCertName = String(document.getElementById('workerUploadCertName').value || '').trim();
       const recordName = String(document.getElementById('workerUploadFileName').value || pickedFile?.name || 'Untitled Upload').trim();
       const certName = selectedCertName || recordName;
-      const expirationDate = String(document.getElementById('workerUploadExpirationDate').value || '').trim();
       if (!certName) throw new Error('Please select a certification or enter a record name.');
       if (!pickedFile) throw new Error('Please choose a PDF or image file before submitting.');
-      if (!expirationDate) throw new Error('Please enter the certification expiration date before submitting.');
       let fileData = '';
       fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1282,7 +1382,7 @@ function bindEvents() {
           workerId: state.user.workerId,
           worker: state.workerPortal?.worker?.name || state.user.name,
           certName,
-          expirationDate,
+          expirationDate: document.getElementById('workerUploadExpirationDate').value,
           status: 'Needs Review',
           notes: document.getElementById('workerUploadNotes').value
         }
