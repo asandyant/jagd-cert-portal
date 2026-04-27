@@ -2034,10 +2034,15 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
         state.selectedCertName = state.certs[0]?.name || null;
       }
       state.view = 'certs';
+      const message = result.message || 'Certification removed from the dropdown. Existing worker records and upload history were not changed.';
       render();
-      window.alert(result.message || 'Certification removed from the dropdown.');
+      requestAnimationFrame(() => {
+        const status = document.getElementById('certRuleSaveStatus');
+        if (status) status.textContent = message;
+      });
     } catch (err) {
-      window.alert(err.message || 'Failed to delete certification from the dropdown.');
+      const status = document.getElementById('certRuleSaveStatus');
+      if (status) status.textContent = err.message || 'Failed to delete certification from the dropdown.';
     }
   }));
 
