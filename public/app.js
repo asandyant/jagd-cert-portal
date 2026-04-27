@@ -484,6 +484,7 @@ function selectedWorkerSection() {
           <div class="small muted" style="margin-top:8px;">Only active workers with an email address can receive automatic worker alerts.</div>
         </div>
         <div class="section small muted">Use Add Certification to Dropdown when office receives a cert that is missing from the current certification list.</div>
+        <div id="workerProfileActionStatus" class="small muted section"></div>
       <div class="section table-wrap">
           <table>
             <thead><tr><th>Certification</th><th>Status</th><th>Date</th><th>Document</th><th>Action</th></tr></thead>
@@ -847,6 +848,7 @@ function uploadsView() {
       </div>
       <div class="card">
         <div class="card-header"><div><h2>Current Upload Records</h2><div class="sub">This is the office intake queue.</div></div><div class="pill">${state.uploads.length} record(s)</div></div>
+        <div id="uploadsActionStatus" class="small muted section"></div>
         <div class="section">
           ${state.uploads.length ? state.uploads.map(u=>`
             <div class="tag">
@@ -2142,38 +2144,51 @@ document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEvent
 
   document.querySelectorAll('[data-delete-upload]').forEach(btn => btn.addEventListener('click', async () => {
     if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can delete upload records.');
+      const status = document.getElementById('uploadsActionStatus');
+      if (status) status.textContent = 'Only admin can delete upload records.';
       return;
     }
     const uploadId = btn.dataset.deleteUpload;
-    const confirmed = window.confirm('Delete this upload record? This also removes the uploaded file from storage when one exists.');
+    const confirmed = await mobileConfirm('Delete this upload record? This also removes the uploaded file from storage when one exists.', 'Delete Upload Record');
     if (!confirmed) return;
     try {
       await api(`/api/uploads/${uploadId}?deleteFile=1`, { method: 'DELETE' });
       await refreshData();
+      state.view = 'uploads';
       render();
-      window.alert('Upload record deleted.');
+      requestAnimationFrame(() => {
+        const status = document.getElementById('uploadsActionStatus');
+        if (status) status.textContent = 'Upload record deleted.';
+      });
     } catch (err) {
-      window.alert(err.message || 'Failed to delete upload record.');
+      const status = document.getElementById('uploadsActionStatus');
+      if (status) status.textContent = err.message || 'Failed to delete upload record.';
     }
   }));
 
   document.querySelectorAll('[data-delete-cert]').forEach(btn => btn.addEventListener('click', async () => {
     if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can delete certifications.');
+      const status = document.getElementById('workerProfileActionStatus');
+      if (status) status.textContent = 'Only admin can delete certifications.';
       return;
     }
     const [workerId, encodedName] = String(btn.dataset.deleteCert || '').split('|');
     const certName = decodeURIComponent(encodedName || '');
-    const confirmed = window.confirm(`Delete the certification "${certName}" from this worker? If the cert file lives in portal uploads, that file will also be removed.`);
+    const confirmed = await mobileConfirm(`Delete the certification "${certName}" from this worker? If the cert file lives in portal uploads, that file will also be removed.`, 'Delete Worker Certification');
     if (!confirmed) return;
     try {
       await api(`/api/workers/${workerId}/certifications`, { method: 'DELETE', body: { certName, deleteFile: true } });
+      state.selectedWorkerId = Number(workerId);
       await refreshData();
+      state.view = 'employees';
       render();
-      window.alert('Certification deleted from worker profile.');
+      requestAnimationFrame(() => {
+        const status = document.getElementById('workerProfileActionStatus');
+        if (status) status.textContent = 'Certification deleted from worker profile.';
+      });
     } catch (err) {
-      window.alert(err.message || 'Failed to delete certification.');
+      const status = document.getElementById('workerProfileActionStatus');
+      if (status) status.textContent = err.message || 'Failed to delete certification.';
     }
   }));
 
