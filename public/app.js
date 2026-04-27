@@ -536,6 +536,72 @@ function selectedWorkerSection() {
 }
 
 
+function workerSetupView() {
+  const worker = state.workerPortal?.worker || {};
+  const mustChange = state.user?.mustChangePassword || worker.portalMustChangePassword !== false;
+  const missingEmail = !String(worker.email || '').trim();
+  return `
+    <div class="container">
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h1 style="margin:10px 0 0;font-size:34px;">Complete Worker Portal Setup</h1>
+            <div class="sub" style="color:#cbd5e1;">Please finish this one-time setup before entering your worker portal.</div>
+          </div>
+          <div class="right-note">
+            <span class="pill">${escapeHtml(worker.name || state.user?.name || 'Worker')}</span>
+            <button class="btn light" id="logoutBtn">Log Out</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section grid grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Required Setup</h2>
+              <div class="sub">Worker email alerts need a valid email address. Temporary passwords must be changed before access.</div>
+            </div>
+          </div>
+          <div class="section">
+            ${mustChange ? '<div class="tag">Password change required</div>' : ''}
+            ${missingEmail ? '<div class="tag">Email address required</div>' : ''}
+          </div>
+          <div class="section grid grid-2">
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Email Address</div>
+              <input id="workerSetupEmail" type="email" value="${escapeHtml(worker.email || state.user?.email || '')}" placeholder="your@email.com" />
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Current Password</div>
+              <input id="workerSetupCurrentPassword" type="password" placeholder="Current password" />
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">New Password ${mustChange ? '' : '(optional)'}</div>
+              <input id="workerSetupNewPassword" type="password" placeholder="New password" />
+            </div>
+            <div>
+              <div class="small muted" style="margin-bottom:6px;">Confirm New Password ${mustChange ? '' : '(optional)'}</div>
+              <input id="workerSetupConfirmPassword" type="password" placeholder="Confirm new password" />
+            </div>
+          </div>
+          <div class="section button-row">
+            <button class="btn dark" id="workerSetupSaveBtn">Save and Enter Portal</button>
+            <div id="workerSetupStatus" class="small muted"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Why this is needed</h2>
+          <div class="section">
+            <div class="tag">Email is used for certification reminders.</div>
+            <div class="tag">Only active workers receive alerts.</div>
+            <div class="tag">Your uploaded records still go to office review.</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function workerPortalView() {
   const payload = state.workerPortal;
   const worker = payload?.worker;
@@ -603,6 +669,18 @@ function workerPortalView() {
           <div class="card">
             <div class="card-header"><div><h2>My Alerts</h2><div class="sub">Only your own records show here.</div></div></div>
             <div class="section">${(payload.alerts || []).length ? payload.alerts.map(a => `<div class="tag"><strong>${a.title}</strong>: ${a.detail}</div>`).join('') : '<div class="muted">No active alerts right now.</div>'}</div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="card-header"><div><h2>My Email Alerts</h2><div class="sub">This email is used for certification reminders.</div></div></div>
+          <div class="section grid grid-2">
+            <input id="workerPortalEmail" type="email" value="${escapeHtml(worker.email || '')}" placeholder="your@email.com" />
+            <input id="workerPortalCurrentPassword" type="password" placeholder="Current password required to save email" />
+          </div>
+          <div class="section button-row">
+            <button class="btn dark" id="workerPortalSaveEmailBtn">Save Email</button>
+            <div id="workerPortalEmailStatus" class="small muted"></div>
           </div>
         </div>
 
@@ -1549,7 +1627,9 @@ function render() {
   if (!state.user) {
     app.innerHTML = loginView();
   } else if (state.user.role === 'Worker') {
-    app.innerHTML = workerPortalView();
+    const worker = state.workerPortal?.worker || {};
+    const needsSetup = !!state.user.setupRequired || !!state.user.mustChangePassword || worker.portalMustChangePassword !== false || !String(worker.email || '').trim();
+    app.innerHTML = needsSetup ? workerSetupView() : workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1659,6 +1739,88 @@ function bindEvents() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
     render();
+  });
+
+  document.getElementById('workerSetupSaveBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('workerSetupStatus');
+    const email = String(document.getElementById('workerSetupEmail')?.value || '').trim();
+    const currentPassword = String(document.getElementById('workerSetupCurrentPassword')?.value || '').trim();
+    const newPassword = String(document.getElementById('workerSetupNewPassword')?.value || '').trim();
+    const confirmPassword = String(document.getElementById('workerSetupConfirmPassword')?.value || '').trim();
+    const mustChange = !!state.user?.mustChangePassword || state.workerPortal?.worker?.portalMustChangePassword !== false;
+    if (status) status.textContent = '';
+    if (!email.includes('@')) {
+      if (status) status.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    if (!currentPassword) {
+      if (status) status.textContent = 'Current password is required.';
+      return;
+    }
+    if (mustChange && newPassword.length < 6) {
+      if (status) status.textContent = 'New password must be at least 6 characters.';
+      return;
+    }
+    if (newPassword || confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        if (status) status.textContent = 'New password and confirm password must match.';
+        return;
+      }
+    }
+    try {
+      if (status) status.textContent = 'Saving setup...';
+      await api('/api/worker-setup', {
+        method: 'POST',
+        body: {
+          workerId: state.user.workerId,
+          username: state.user.username,
+          currentPassword,
+          newPassword,
+          email
+        }
+      });
+      state.user.mustChangePassword = false;
+      state.user.setupRequired = false;
+      state.user.email = email;
+      await refreshData();
+      render();
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Setup failed.';
+    }
+  });
+
+  document.getElementById('workerPortalSaveEmailBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('workerPortalEmailStatus');
+    const email = String(document.getElementById('workerPortalEmail')?.value || '').trim();
+    const currentPassword = String(document.getElementById('workerPortalCurrentPassword')?.value || '').trim();
+    if (status) status.textContent = '';
+    if (!email.includes('@')) {
+      if (status) status.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    if (!currentPassword) {
+      if (status) status.textContent = 'Current password is required to save email.';
+      return;
+    }
+    try {
+      if (status) status.textContent = 'Saving email...';
+      await api('/api/worker-setup', {
+        method: 'POST',
+        body: {
+          workerId: state.user.workerId,
+          username: state.user.username,
+          currentPassword,
+          email,
+          newPassword: ''
+        }
+      });
+      state.user.email = email;
+      await refreshData();
+      if (status) status.textContent = 'Email saved.';
+      render();
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Email save failed.';
+    }
   });
 
   document.getElementById('reportJobSelector')?.addEventListener('change', async (e) => {

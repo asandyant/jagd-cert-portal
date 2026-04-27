@@ -999,6 +999,7 @@ app.post('/api/login', (req, res) => {
     role: 'Worker',
     name: w.name,
     workerId: w.id,
+    email: w.email || '',
     mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
 
@@ -1006,7 +1007,8 @@ app.post('/api/login', (req, res) => {
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
-  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword } });
+  const setupRequired = String(user.role || '') === 'Worker' ? (!!user.mustChangePassword || !isValidEmail(user.email || '')) : false;
+  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword, email: user.email || '', setupRequired } });
 });
 
 
@@ -1223,6 +1225,40 @@ app.post('/api/worker-password-change', (req, res) => {
   appendAuditLog(store, req, 'Changed worker password', `${worker.name} updated portal password`, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
   res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, mustChangePassword: false });
+});
+
+
+
+app.post('/api/worker-setup', (req, res) => {
+  const store = readStore();
+  const workerId = String(req.body?.workerId || '').trim();
+  const username = String(req.body?.username || '').trim().toLowerCase();
+  const currentPassword = String(req.body?.currentPassword || '').trim();
+  const newPassword = String(req.body?.newPassword || '').trim();
+  const email = normalizeEmail(req.body?.email || '');
+
+  const worker = (store.workers || []).find(w => String(w.id) === workerId && String(w.portalUsername || '').trim().toLowerCase() === username);
+  if (!worker) return res.status(404).send('Worker account not found.');
+  if (String(worker.portalPassword || 'worker123').trim() !== currentPassword) return res.status(401).send('Current password is incorrect.');
+  if (!isValidEmail(email)) return res.status(400).send('A valid email address is required.');
+
+  const mustChangePassword = worker.portalMustChangePassword !== false;
+  if (mustChangePassword) {
+    if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
+    if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
+    worker.portalPassword = newPassword;
+    worker.portalMustChangePassword = false;
+  } else if (newPassword) {
+    if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
+    if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
+    worker.portalPassword = newPassword;
+    worker.portalMustChangePassword = false;
+  }
+
+  worker.email = email;
+  appendAuditLog(store, req, 'Completed worker portal setup', `${worker.name} updated portal email${newPassword ? ' and password' : ''}`, { workerId: worker.id, workerName: worker.name });
+  writeStore(store);
+  res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, email: worker.email, mustChangePassword: false });
 });
 
 app.post('/api/workers/:id/bloodwork', (req, res) => {
