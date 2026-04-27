@@ -743,6 +743,7 @@ function bloodworkView() {
 
     <div class="card section">
       <div class="card-header"><div><h2>Bloodwork Records</h2><div class="sub">Edit or delete existing bloodwork records below.</div></div></div>
+      <div id="bloodworkActionStatus" class="small muted section"></div>
       <div class="section table-wrap">
         <table>
           <thead><tr><th>Worker</th><th>Test Date</th><th>Next Due</th><th>BLL</th><th>ZPP</th><th>Status</th><th>Action</th></tr></thead>
@@ -1323,6 +1324,84 @@ function mobileConfirm(message, title = 'Please Confirm') {
     };
     modal.querySelector('#mobileConfirmCancel')?.addEventListener('click', () => cleanup(false));
     modal.querySelector('#mobileConfirmOk')?.addEventListener('click', () => cleanup(true));
+  });
+}
+
+
+function setBloodworkActionStatus(message, isError = false) {
+  const status = document.getElementById('bloodworkActionStatus') || document.getElementById('bloodworkAddStatus') || document.getElementById('workerProfileActionStatus');
+  if (status) {
+    status.textContent = message || '';
+    status.style.color = isError ? '#991b1b' : '#166534';
+  }
+}
+
+function openBloodworkEditModal(workerId, rowIndex, bloodworkRow) {
+  return new Promise(resolve => {
+    const existing = document.getElementById('bloodworkEditModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'bloodworkEditModal';
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width:760px;">
+        <div class="flex space-between wrap">
+          <div>
+            <h2>Edit Bloodwork</h2>
+            <div class="sub">Update the bloodwork record below. This form replaces phone-unfriendly popups.</div>
+          </div>
+          <button class="btn light" id="closeBloodworkEditModal">Close</button>
+        </div>
+        <div class="grid grid-2 section">
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Test Date</div>
+            <input id="editBloodworkTestDate" type="date" value="${escapeHtml(bloodworkRow.testDate || '')}" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Next Due</div>
+            <input id="editBloodworkNextDue" type="date" value="${escapeHtml(bloodworkRow.nextDue || '')}" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">BLL</div>
+            <input id="editBloodworkBLL" value="${escapeHtml(bloodworkRow.bll ?? '')}" placeholder="BLL value" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">ZPP</div>
+            <input id="editBloodworkZPP" value="${escapeHtml(bloodworkRow.zpp ?? '')}" placeholder="ZPP value" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Status</div>
+            <select id="editBloodworkStatus">
+              ${['Current','Due Soon','Overdue','Needs Attention'].map(status => `<option value="${status}" ${String(bloodworkRow.status || 'Current') === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div id="editBloodworkStatusText" class="small muted section"></div>
+        <div class="button-row section" style="justify-content:flex-end;">
+          <button class="btn light" id="cancelBloodworkEditBtn">Cancel</button>
+          <button class="btn dark" id="saveBloodworkEditBtn">Save Bloodwork</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const cleanup = value => {
+      modal.remove();
+      resolve(value);
+    };
+
+    modal.querySelector('#closeBloodworkEditModal')?.addEventListener('click', () => cleanup(null));
+    modal.querySelector('#cancelBloodworkEditBtn')?.addEventListener('click', () => cleanup(null));
+    modal.querySelector('#saveBloodworkEditBtn')?.addEventListener('click', () => {
+      cleanup({
+        workerId,
+        rowIndex,
+        testDate: String(modal.querySelector('#editBloodworkTestDate')?.value || '').trim(),
+        nextDue: String(modal.querySelector('#editBloodworkNextDue')?.value || '').trim(),
+        bll: String(modal.querySelector('#editBloodworkBLL')?.value || '').trim(),
+        zpp: String(modal.querySelector('#editBloodworkZPP')?.value || '').trim(),
+        status: String(modal.querySelector('#editBloodworkStatus')?.value || 'Current').trim()
+      });
+    });
   });
 }
 
@@ -2193,63 +2272,57 @@ document.querySelectorAll('[data-open-cert-upload]').forEach(btn => btn.addEvent
   }));
 
   document.querySelectorAll('[data-edit-bloodwork]').forEach(btn => btn.addEventListener('click', async () => {
-    if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can edit bloodwork records.');
+    if (!canManageBloodwork()) {
+      setBloodworkActionStatus('Only Admin or Office can edit bloodwork records.', true);
       return;
     }
     const [workerId, rowIndex] = String(btn.dataset.editBloodwork || '').split('|');
     const worker = state.workers.find(w => String(w.id) === String(workerId));
     const bloodworkRow = worker?.bloodwork?.[Number(rowIndex)] || state.bloodwork.find(r => String(r.workerId) === String(workerId) && String(r.rowIndex) === String(rowIndex));
     if (!bloodworkRow) {
-      window.alert('Bloodwork record not found.');
+      setBloodworkActionStatus('Bloodwork record not found.', true);
       return;
     }
 
-    const testDate = window.prompt('Edit Test Date (YYYY-MM-DD):', bloodworkRow.testDate || '');
-    if (testDate === null) return;
-    const nextDue = window.prompt('Edit Next Due (YYYY-MM-DD):', bloodworkRow.nextDue || '');
-    if (nextDue === null) return;
-    const bll = window.prompt('Edit BLL:', String(bloodworkRow.bll ?? ''));
-    if (bll === null) return;
-    const zpp = window.prompt('Edit ZPP:', String(bloodworkRow.zpp ?? ''));
-    if (zpp === null) return;
-    const status = window.prompt('Edit Status (Current, Due Soon, Overdue, Needs Attention):', bloodworkRow.status || 'Current');
-    if (status === null) return;
+    const updated = await openBloodworkEditModal(workerId, rowIndex, bloodworkRow);
+    if (!updated) return;
 
     try {
+      setBloodworkActionStatus('Saving bloodwork record...');
       await api(`/api/workers/${workerId}/bloodwork/${rowIndex}`, {
         method: 'PUT',
         body: {
-          testDate: String(testDate || '').trim(),
-          nextDue: String(nextDue || '').trim(),
-          bll: String(bll || '').trim(),
-          zpp: String(zpp || '').trim(),
-          status: String(status || '').trim()
+          testDate: updated.testDate,
+          nextDue: updated.nextDue,
+          bll: updated.bll,
+          zpp: updated.zpp,
+          status: updated.status
         }
       });
       await refreshData();
       render();
-      window.alert('Bloodwork record updated.');
+      setBloodworkActionStatus('Bloodwork record updated.');
     } catch (err) {
-      window.alert(err.message || 'Failed to update bloodwork record.');
+      setBloodworkActionStatus(err.message || 'Failed to update bloodwork record.', true);
     }
   }));
 
   document.querySelectorAll('[data-delete-bloodwork]').forEach(btn => btn.addEventListener('click', async () => {
-    if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can delete bloodwork records.');
+    if (!canDeleteRecords()) {
+      setBloodworkActionStatus('Only Admin can delete bloodwork records.', true);
       return;
     }
     const [workerId, rowIndex] = String(btn.dataset.deleteBloodwork || '').split('|');
-    const confirmed = window.confirm('Delete this bloodwork record? This cannot be undone.');
+    const confirmed = await mobileConfirm('Delete this bloodwork record? This cannot be undone.', 'Delete Bloodwork Record');
     if (!confirmed) return;
     try {
+      setBloodworkActionStatus('Deleting bloodwork record...');
       await api(`/api/workers/${workerId}/bloodwork/${rowIndex}`, { method: 'DELETE' });
       await refreshData();
       render();
-      window.alert('Bloodwork record deleted.');
+      setBloodworkActionStatus('Bloodwork record deleted.');
     } catch (err) {
-      window.alert(err.message || 'Failed to delete bloodwork record.');
+      setBloodworkActionStatus(err.message || 'Failed to delete bloodwork record.', true);
     }
   }));
 
