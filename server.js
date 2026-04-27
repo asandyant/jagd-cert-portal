@@ -135,6 +135,131 @@ function getEmailAlertSettings(store) {
   return settings;
 }
 
+function defaultCertificationAlertRules() {
+  return [
+    { certName: 'Training Pack', aliases: ['Training Pack'], enabled: true, expirationDays: 365, reminderDays: 30, note: 'Annual training pack renewal.' },
+    { certName: 'PFT Fit', aliases: ['PFT Fit', 'Fit Test'], enabled: true, expirationDays: 365, reminderDays: 30, note: 'Annual fit test reminder.' },
+    { certName: 'OSHA 10/30', aliases: ['OSHA 10/30', 'OSHA 30'], enabled: true, expirationDays: 1825, reminderDays: 30, note: 'Flag OSHA 30 older than 5 years when jobs require recent OSHA.' },
+    { certName: 'BLL / ZPP Current', aliases: ['BLL / ZPP Current', 'Bloodwork'], enabled: true, expirationDays: 30, reminderDays: 7, note: 'Typical 30-day bloodwork cycle for lead work.' }
+  ];
+}
+
+function sanitizeCertificationAlertRule(rule = {}) {
+  const certName = normalizeCertName(rule.certName || rule.name || '');
+  if (!certName) return null;
+  const aliases = Array.isArray(rule.aliases) ? rule.aliases.map(normalizeCertName).filter(Boolean) : [];
+  const expirationDays = Number(rule.expirationDays ?? rule.days ?? 365);
+  const reminderDays = Number(rule.reminderDays ?? 30);
+  return {
+    certName,
+    aliases: [...new Set([certName, ...aliases].filter(Boolean))],
+    enabled: rule.enabled !== false,
+    expirationDays: Number.isFinite(expirationDays) && expirationDays >= 0 && expirationDays <= 3650 ? expirationDays : 365,
+    reminderDays: Number.isFinite(reminderDays) && reminderDays >= 0 && reminderDays <= 365 ? reminderDays : 30,
+    note: String(rule.note || '').trim()
+  };
+}
+
+function getCertificationAlertRules(store) {
+  store.meta = store.meta || {};
+  const existing = Array.isArray(store.meta.certificationAlertRules) ? store.meta.certificationAlertRules : null;
+  const source = existing && existing.length ? existing : defaultCertificationAlertRules();
+  const rules = source.map(sanitizeCertificationAlertRule).filter(Boolean);
+  store.meta.certificationAlertRules = rules;
+  return rules;
+}
+
+function findCertificationAlertRule(store, certName = '') {
+  const normalized = normalizeCertName(certName).toLowerCase();
+  if (!normalized) return null;
+  return getCertificationAlertRules(store).find(rule => {
+    if (rule.enabled === false) return false;
+    return (rule.aliases || []).some(alias => normalizeCertName(alias).toLowerCase() === normalized);
+  }) || null;
+}
+
+function isIsoDate(value = '') {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+}
+
+function addDaysToIsoDate(value = '', days = 0) {
+  if (!isIsoDate(value)) return '';
+  const date = new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate() + Number(days || 0));
+  return date.toISOString().slice(0, 10);
+}
+
+function firstIsoDate(...values) {
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (isIsoDate(text)) return text;
+  }
+  return '';
+}
+
+function resolveCertificationAlertDate(store, cert = {}) {
+  const certName = normalizeCertName(cert.name || cert.certName || 'Certification');
+  const rule = findCertificationAlertRule(store, certName);
+
+  // Option 1 safety rule: keep existing expiration dates exactly as entered.
+  // Certification rules only help when no usable expiration date exists.
+  const enteredExpiration = firstIsoDate(
+    cert.expirationDate,
+    cert.expires,
+    cert.expiry,
+    cert.expiration,
+    cert.date
+  );
+
+  if (enteredExpiration) {
+    return {
+      expirationDate: enteredExpiration,
+      rule,
+      ruleApplied: false,
+      missingExpiration: false,
+      reasonPrefix: ''
+    };
+  }
+
+  if (!rule) {
+    return {
+      expirationDate: '',
+      rule: null,
+      ruleApplied: false,
+      missingExpiration: true,
+      reasonPrefix: ''
+    };
+  }
+
+  const sourceDate = firstIsoDate(
+    cert.issueDate,
+    cert.issuedDate,
+    cert.completedDate,
+    cert.completionDate,
+    cert.trainingDate,
+    cert.uploadedAt,
+    cert.createdAt
+  );
+
+  if (sourceDate && Number(rule.expirationDays || 0) > 0) {
+    return {
+      expirationDate: addDaysToIsoDate(sourceDate, Number(rule.expirationDays || 0)),
+      rule,
+      ruleApplied: true,
+      missingExpiration: false,
+      reasonPrefix: `Rule-based from ${sourceDate}; `
+    };
+  }
+
+  return {
+    expirationDate: '',
+    rule,
+    ruleApplied: true,
+    missingExpiration: true,
+    reasonPrefix: `Missing expiration date; ${rule.certName} rule requires renewal every ${rule.expirationDays} day(s).`
+  };
+}
+
 function normalizeEmail(value = '') {
   return String(value || '').trim().toLowerCase();
 }
@@ -179,8 +304,9 @@ function createMailTransporter() {
 
 function workerCertReminderItems(store) {
   const settings = getEmailAlertSettings(store);
+  getCertificationAlertRules(store);
   const reminderDays = settings.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0);
-  const maxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
+  const defaultMaxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
   const activeWorkers = (store.workers || []).filter(worker => (worker.employmentStatus || 'Active') === 'Active');
   const rows = [];
 
@@ -188,19 +314,41 @@ function workerCertReminderItems(store) {
     const email = normalizeEmail(worker.email || worker.workerEmail || '');
     (worker.certifications || []).forEach(cert => {
       const certName = normalizeCertName(cert.name || 'Certification');
-      const expirationDate = String(cert.date || cert.expirationDate || '').trim();
-      const status = String(cert.status || '').trim() || computeExpirationStatus(expirationDate);
+      const resolved = resolveCertificationAlertDate(store, cert);
+      const expirationDate = resolved.expirationDate;
+      let status = String(cert.status || '').trim();
       let daysUntil = null;
-      if (expirationDate && /^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
+
+      if (expirationDate && isIsoDate(expirationDate)) {
+        status = status || computeExpirationStatus(expirationDate);
         const exp = new Date(`${expirationDate}T00:00:00`);
         daysUntil = Math.floor((exp - TODAY) / (1000 * 60 * 60 * 24));
       }
+
+      if (resolved.missingExpiration && resolved.rule) {
+        status = 'Needs Attention';
+      }
+
+      status = status || 'Current';
+      const ruleReminderDays = resolved.rule ? Number(resolved.rule.reminderDays || 30) : defaultMaxDays;
+      const reminderWindow = Number.isFinite(ruleReminderDays) ? ruleReminderDays : defaultMaxDays;
+
       const shouldInclude =
         status.includes('Expired') ||
         status.includes('Needs Attention') ||
         status.includes('Expiring') ||
-        (daysUntil !== null && daysUntil <= maxDays);
+        (daysUntil !== null && daysUntil <= reminderWindow);
+
       if (!shouldInclude) return;
+
+      const reason = resolved.missingExpiration && resolved.rule
+        ? resolved.reasonPrefix
+        : daysUntil !== null && daysUntil < 0
+          ? `${resolved.reasonPrefix}Expired`
+          : daysUntil !== null
+            ? `${resolved.reasonPrefix}${daysUntil} day(s) until expiration`
+            : status;
+
       rows.push({
         workerId: worker.id,
         workerName: worker.name,
@@ -211,7 +359,9 @@ function workerCertReminderItems(store) {
         status,
         daysUntil,
         currentJob: worker.currentJob || worker.crew || '-',
-        reason: daysUntil !== null && daysUntil < 0 ? 'Expired' : daysUntil !== null ? `${daysUntil} day(s) until expiration` : status
+        reason,
+        ruleApplied: !!resolved.ruleApplied,
+        ruleName: resolved.rule?.certName || ''
       });
     });
   });
@@ -558,6 +708,7 @@ function readStore() {
     writeStore(store);
   }
   getEmailAlertSettings(store);
+  getCertificationAlertRules(store);
   if (store.workers) {
     let changed = false;
     store.workers = store.workers.map((worker, index) => {
@@ -637,8 +788,20 @@ function computeAlerts(store) {
   const alerts = [];
 
   const activeWorkers = workers.filter(w => (w.employmentStatus || 'Active') === 'Active');
-  const expiringWorkers = activeWorkers.filter(w => String(w.status || '').includes('Expiring'));
-  const attentionWorkers = activeWorkers.filter(w => String(w.status || '').includes('Attention'));
+  const certReminderRows = workerCertReminderItems(store);
+  const certAttentionIds = new Set(certReminderRows
+    .filter(row => String(row.status || '').includes('Expired') || String(row.status || '').includes('Needs Attention'))
+    .map(row => String(row.workerId)));
+  const certExpiringIds = new Set(certReminderRows
+    .filter(row => String(row.status || '').includes('Expiring') || (row.daysUntil !== null && row.daysUntil >= 0))
+    .map(row => String(row.workerId)));
+
+  const expiringWorkers = activeWorkers.filter(w =>
+    String(w.status || '').includes('Expiring') || certExpiringIds.has(String(w.id))
+  );
+  const attentionWorkers = activeWorkers.filter(w =>
+    String(w.status || '').includes('Attention') || certAttentionIds.has(String(w.id))
+  );
   const bloodworkDue = activeWorkers.filter(w => (w.bloodwork || []).some(b => {
     const s = String(b.status || '');
     return s.includes('Due') || s.includes('Overdue');
@@ -649,13 +812,13 @@ function computeAlerts(store) {
   if (expiringWorkers.length) alerts.push({
     type: 'warning',
     title: 'Expiring certifications',
-    detail: `${expiringWorkers.length} active worker(s) have certifications expiring soon.`,
+    detail: `${expiringWorkers.length} active worker(s) have certifications expiring soon or within rule reminder windows.`,
     count: expiringWorkers.length
   });
   if (attentionWorkers.length) alerts.push({
     type: 'danger',
     title: 'Workers need attention',
-    detail: `${attentionWorkers.length} active worker(s) are missing, expired, or overdue on required items.`,
+    detail: `${attentionWorkers.length} active worker(s) are missing, expired, overdue, or missing required expiration information.`,
     count: attentionWorkers.length
   });
   if (bloodworkDue.length) alerts.push({
@@ -1696,6 +1859,21 @@ app.post('/api/email-alerts/send-worker-now', async (req, res) => {
   }
 });
 
+app.put('/api/certification-alert-rules', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const store = readStore();
+  const incomingRules = Array.isArray(req.body?.rules) ? req.body.rules : [];
+  const rules = incomingRules.map(sanitizeCertificationAlertRule).filter(Boolean);
+  if (!rules.length) return res.status(400).json({ error: 'At least one certification alert rule is required.' });
+
+  store.meta = store.meta || {};
+  store.meta.certificationAlertRules = rules;
+  const preview = workerReminderPreview(store);
+  appendAuditLog(store, req, 'Updated certification alert rules', `${rules.length} rule(s) saved`);
+  writeStore(store);
+  res.json({ ok: true, certificationAlertRules: rules, preview });
+});
+
 app.get('/api/admin', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const store = readStore();
@@ -1703,6 +1881,7 @@ app.get('/api/admin', (req, res) => {
   res.json({
     emailAlerts: emailPreview.settings,
     workerEmailPreview: emailPreview,
+    certificationAlertRules: getCertificationAlertRules(store),
     baselineRequirements: store.meta?.baselineRequirements || [],
     reminderRules: store.meta?.reminderRules || [],
     managedAccounts: managedPortalAccounts(store),
