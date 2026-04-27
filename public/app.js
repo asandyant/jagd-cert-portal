@@ -661,6 +661,7 @@ function certsView() {
           <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
         </div>
       </div>
+      ${String(state.user?.role || '') === 'Admin' ? `<div class="section">${certificationRulesCard()}</div>` : ''}
       <div class="section table-wrap">
         <table>
           <thead><tr><th>Certification</th><th>Active Good</th><th>Active Needs Attention</th><th>Required By Jobs</th><th>Aliases / Source Names</th></tr></thead>
@@ -1073,6 +1074,26 @@ function certificationRulesTable() {
   </tbody></table></div>`;
 }
 
+
+function certificationRulesCard() {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div><h2>Certification Alert Rules</h2><div class="sub">Master rules for how often key certifications should be renewed. These rules feed the worker email preview and reminders without changing existing worker records.</div></div>
+        <button class="btn dark" id="saveCertificationRulesBtn">Save Certification Rules</button>
+      </div>
+      <div class="section">
+        <div class="tag"><strong>Training Pack:</strong> yearly</div>
+        <div class="tag"><strong>Fit Test:</strong> yearly</div>
+        <div class="tag"><strong>OSHA 30:</strong> 5 years</div>
+        <div class="tag"><strong>Bloodwork:</strong> typical 30-day cycle</div>
+      </div>
+      <div class="small muted section">Expiration and reminder numbers are in days. Leave worker alerts OFF until the preview looks right.</div>
+      <div class="section">${certificationRulesTable()}</div>
+      <div id="certRuleSaveStatus" class="small muted section"></div>
+    </div>`;
+}
+
 function officeDigestPreviewText() {
   const alerts = liveAlerts();
   const lines = [
@@ -1148,22 +1169,6 @@ function adminView() {
     <div class="card section">
       <div class="card-header"><div><h2>Worker Email Alert Preview List</h2><div class="sub">Review real worker alert rows before turning on automatic worker emails.</div></div></div>
       <div class="section">${workerEmailPreviewTable()}</div>
-    </div>
-
-    <div class="card section">
-      <div class="card-header">
-        <div><h2>Certification Alert Rules</h2><div class="sub">Master rules for how often key certifications should be renewed. These rules feed the worker email preview and reminders without changing existing worker records.</div></div>
-        <button class="btn dark" id="saveCertificationRulesBtn">Save Certification Rules</button>
-      </div>
-      <div class="section">
-        <div class="tag"><strong>Training Pack:</strong> yearly</div>
-        <div class="tag"><strong>Fit Test:</strong> yearly</div>
-        <div class="tag"><strong>OSHA 30:</strong> 5 years</div>
-        <div class="tag"><strong>Bloodwork:</strong> typical 30-day cycle</div>
-      </div>
-      <div class="small muted section">Expiration and reminder numbers are in days. Leave worker alerts OFF until the preview looks right.</div>
-      <div class="section">${certificationRulesTable()}</div>
-      <div id="certRuleSaveStatus" class="small muted section"></div>
     </div>
   `);
 }
