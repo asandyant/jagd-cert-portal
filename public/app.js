@@ -1573,7 +1573,7 @@ function bindEvents() {
   });
 
 
-  document.getElementById('addCertificationRuleBtn')?.addEventListener('click', () => {
+  document.getElementById('addCertificationRuleBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('certRuleSaveStatus');
     const certName = document.getElementById('addCertificationRuleName')?.value || '';
     if (!certName) {
@@ -1602,7 +1602,12 @@ function bindEvents() {
       return;
     }
 
-    const ok = confirm(`Add certification alert rule for ${certName}?\n\nExpires Every: ${expirationDays} day(s)\nReminder Window: ${reminderDays} day(s)\n\nThis will add the rule to the list, but it will not be permanent until you click Save Certification Rules.`);
+    const ok = confirm(`Add certification alert rule for ${certName}?
+
+Expires Every: ${expirationDays} day(s)
+Reminder Window: ${reminderDays} day(s)
+
+If you click OK, this rule will be added and saved automatically.`);
     if (!ok) return;
 
     const cert = (state.certs || []).find(item => normalizeCertName(item.name || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
@@ -1614,10 +1619,22 @@ function bindEvents() {
       reminderDays,
       note
     });
-    state.certificationAlertRules = rules;
-    if (state.admin) state.admin.certificationAlertRules = rules;
-    alert(`${certName} rule added. Click Save Certification Rules to make it permanent.`);
-    render();
+
+    if (status) status.textContent = `Saving ${certName} rule...`;
+    try {
+      const result = await api('/api/certification-alert-rules', {
+        method: 'PUT',
+        body: { rules }
+      });
+      state.certificationAlertRules = result.certificationAlertRules || [];
+      state.workerEmailPreview = result.preview || null;
+      if (status) status.textContent = `${certName} rule added and saved.`;
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to save certification alert rule.';
+      alert(e.message || 'Failed to save certification alert rule.');
+    }
   });
 
   document.querySelectorAll('[data-edit-cert-rule]').forEach(btn => btn.addEventListener('click', () => {
@@ -1630,19 +1647,32 @@ function bindEvents() {
     if (status) status.textContent = `Editing ${rule?.certName || 'certification rule'}. Change the row values, then click Save Certification Rules.`;
   }));
 
-  document.querySelectorAll('[data-delete-cert-rule]').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('[data-delete-cert-rule]').forEach(btn => btn.addEventListener('click', async () => {
     const index = Number(btn.dataset.deleteCertRule);
     const rules = [...(state.certificationAlertRules || state.admin?.certificationAlertRules || [])];
     const rule = rules[index];
     const status = document.getElementById('certRuleSaveStatus');
     if (!rule) return;
-    const ok = confirm(`Delete certification alert rule for ${rule.certName || 'this certification'}?\n\nThis removes it from the screen only. Click Save Certification Rules to make the deletion permanent.`);
+    const ok = confirm(`Delete certification alert rule for ${rule.certName || 'this certification'}?
+
+If you click OK, this rule will be removed and saved automatically.`);
     if (!ok) return;
     rules.splice(index, 1);
-    state.certificationAlertRules = rules;
-    if (state.admin) state.admin.certificationAlertRules = rules;
-    if (status) status.textContent = `${rule.certName || 'Certification'} rule removed. Click Save Certification Rules to make it permanent.`;
-    render();
+    if (status) status.textContent = `Deleting ${rule.certName || 'certification'} rule...`;
+    try {
+      const result = await api('/api/certification-alert-rules', {
+        method: 'PUT',
+        body: { rules }
+      });
+      state.certificationAlertRules = result.certificationAlertRules || [];
+      state.workerEmailPreview = result.preview || null;
+      if (status) status.textContent = `${rule.certName || 'Certification'} rule deleted and saved.`;
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to delete certification alert rule.';
+      alert(e.message || 'Failed to delete certification alert rule.');
+    }
   }));
 
   document.getElementById('saveCertificationRulesBtn')?.addEventListener('click', async () => {
