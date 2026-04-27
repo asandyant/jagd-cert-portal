@@ -26,7 +26,6 @@ const state = {
   auditLog: [],
   pendingScrollTarget: null,
   workerPortal: null,
-  portalSetupStatus: '',
   modals: { worker: false, job: false, jobEdit: false, addCertDropdown: false }
 };
 
@@ -195,19 +194,19 @@ function layout(content) {
           </div>
         </div>
         <div class="snapshot">
-          <div class="small" style="color:#cbd5e1;">Portal Snapshot</div>
-          <div class="sub" style="color:#cbd5e1;">Quick view of worker records, active jobs, certifications, alerts, reports, and portal access status.</div>
+          <div class="small" style="color:#cbd5e1;">Executive Snapshot</div>
+          <div class="sub" style="color:#cbd5e1;">This version includes real imported worker names, 30 current jobs, job requirement editing, add worker/add job, and a working backend.</div>
         </div>
         <div class="nav">
           ${visibleNav.map(([id,label]) => `<button class="${state.view===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}
         </div>
         <div class="stats">
-          <div class="stat"><div class="label">Total Records</div><div class="value">${counts.employees}</div></div>
+          <div class="stat"><div class="label">Total Employees</div><div class="value">${counts.employees}</div></div>
           <div class="stat"><div class="label">Active Workers</div><div class="value">${counts.activeWorkers}</div></div>
           <div class="stat"><div class="label">Inactive Workers</div><div class="value">${counts.inactiveWorkers}</div></div>
           <div class="stat"><div class="label">Terminated</div><div class="value">${counts.terminatedWorkers || 0}</div></div>
           <div class="stat"><div class="label">Archived</div><div class="value">${counts.archivedWorkers || 0}</div></div>
-          <div class="stat"><div class="label">Expiring 30 Days</div><div class="value">${counts.expiring30}</div></div>
+          <div class="stat"><div class="label">Employees Expiring (30 Days)</div><div class="value">${counts.expiring30}</div></div>
           <div class="stat"><div class="label">Needs Attention</div><div class="value">${counts.needsAttention}</div></div>
           <div class="stat"><div class="label">Total Jobs</div><div class="value">${counts.totalJobs}</div></div>
           <div class="stat"><div class="label">Active Jobs</div><div class="value">${counts.activeJobs}</div></div>
@@ -242,14 +241,14 @@ function loginView() {
       </div>
       <div class="grid grid-2 section">
         <div class="card">
-          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use your assigned Portal Access account or worker login to open the portal.</div></div></div>
+          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use office/admin test logins below to open the portal. Worker logins stay tied to each worker profile.</div></div></div>
           <div class="section grid grid-2">
-            <div><div class="small muted">Username</div><input id="loginUsername" value="" autocomplete="username" /></div>
-            <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="" autocomplete="current-password" /></div>
+            <div><div class="small muted">Username</div><input id="loginUsername" value="admin" /></div>
+            <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="admin123" /></div>
           </div>
           <div class="section button-row">
             <button class="btn dark" id="loginBtn">Enter Portal</button>
-            <div class="pill">Use your assigned login</div>
+            <div class="pill">admin/admin123 · office/office123 · pm/pm123</div>
           </div>
           <div id="loginError" class="small" style="color:#991b1b;margin-top:10px;"></div>
         </div>
@@ -285,10 +284,6 @@ function canManageJobs() {
 
 function canManageWorkers() {
   return String(state.user?.role || '') === 'Admin';
-}
-
-function canAddWorkers() {
-  return ['Admin', 'Office'].includes(String(state.user?.role || ''));
 }
 
 function canViewAdmin() {
@@ -442,7 +437,7 @@ function employeesView() {
     <div class="card">
       <div class="card-header">
         <div><h2>Employees</h2><div class="sub">Search the full imported roster and open worker profiles.</div></div>
-        ${canAddWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
+        ${canManageWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
       </div>
       <div class="section filter-row">
         ${[['all','All Workers'],['active','Active'],['inactive','Inactive'],['terminated','Terminated'],['archived','Archived'],['qualified','Qualified'],['expiring','Expiring Soon'],['attention','Needs Attention'],['bloodwork','Has Bloodwork']].map(([id,label])=>`<button class="${state.employeeFilter===id?'active':''}" data-worker-filter="${id}">${label}</button>`).join('')}
@@ -488,8 +483,7 @@ function selectedWorkerSection() {
             ` : '<span class="small muted">Admin only</span>'}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
-          <div style="margin-top:6px;font-weight:700;">Username: ${worker.portalUsername || '-'}</div>
-          <div class="small muted" style="margin-top:4px;">Password hidden for security. Admin can reset worker passwords when needed.</div>
+          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
           <div class="small muted" style="margin-top:14px;">Worker Email Alerts</div>
           <div class="grid grid-2" style="margin-top:8px;">
             <input id="profileWorkerEmail" value="${escapeHtml(worker.email || '')}" placeholder="worker@email.com" ${!canManageWorkers() ? 'disabled' : ''} />
@@ -541,70 +535,6 @@ function selectedWorkerSection() {
     </div>`;
 }
 
-
-
-function portalSetupRequired(user = state.user) {
-  if (!user) return false;
-  if (['Admin', 'Office', 'PM', 'Worker'].includes(String(user.role || ''))) {
-    return user.mustCompleteSetup === true || user.mustChangePassword === true || !String(user.email || '').trim();
-  }
-  return false;
-}
-
-function portalSetupView() {
-  const user = state.user || {};
-  const isWorker = String(user.role || '') === 'Worker';
-  const needsPassword = user.mustChangePassword === true || user.mustCompleteSetup === true;
-  const roleLabel = isWorker ? 'Worker' : (user.role || 'Portal');
-  return `
-    <div class="login-shell">
-      <div class="login-card">
-        <div class="hero">
-          <div class="hero-top">
-            <div>
-              <h1 style="margin:10px 0 0;font-size:34px;">Complete Portal Setup</h1>
-              <div class="sub" style="color:#cbd5e1;">${escapeHtml(roleLabel)} account setup is required before entering the portal.</div>
-            </div>
-            <div class="right-note">
-              <span class="pill">${escapeHtml(user.name || user.username || '')}</span>
-              <button class="btn light" id="logoutBtn">Log Out</button>
-            </div>
-          </div>
-        </div>
-        <div class="card section">
-          <div class="card-header">
-            <div>
-              <h2>Set Email and Password</h2>
-              <div class="sub">This email will be used for portal alerts and account communication.</div>
-            </div>
-          </div>
-          <div class="grid grid-2 section">
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Email Address</div>
-              <input id="setupEmail" type="email" value="${escapeHtml(user.email || '')}" placeholder="name@email.com" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Current Password</div>
-              <input id="setupCurrentPassword" name="setupCurrentPasswordNoAutofill" type="password" placeholder="Current temporary password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">New Password</div>
-              <input id="setupNewPassword" name="setupNewPasswordNoAutofill" type="password" placeholder="New password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
-            </div>
-            <div>
-              <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
-              <input id="setupConfirmPassword" name="setupConfirmPasswordNoAutofill" type="password" placeholder="Confirm new password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
-            </div>
-          </div>
-          <div class="section small muted">${needsPassword ? 'You must change the temporary password before continuing.' : 'Enter your current password to save your email. You may also set a new password here.'}</div>
-          <div class="section button-row">
-            <button class="btn dark" id="completePortalSetupBtn">Complete Setup</button>
-            <div id="portalSetupStatus" class="small muted">${escapeHtml(state.portalSetupStatus || '')}</div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
 
 function workerPortalView() {
   const payload = state.workerPortal;
@@ -1314,7 +1244,6 @@ function renderWorkerModal() {
   return `
     <div class="modal"><div class="modal-box">
       <div class="flex space-between"><h2>Add Worker</h2><button class="btn light" id="closeWorkerModal">Close</button></div>
-      <div class="small muted" style="margin-top:8px;">Admin and Office can add workers. Higher-risk edits and deletes remain Admin controlled.</div>
       <div class="grid grid-2 section">
         <input id="newWorkerFirst" placeholder="First name" />
         <input id="newWorkerLast" placeholder="Last name" />
@@ -1543,7 +1472,6 @@ function portalAccessView() {
           <div class="grid grid-2 section">
             <input id="accessName" placeholder="Full name" />
             <input id="accessUsername" placeholder="Username (lowercase)" />
-            <input id="accessEmail" type="email" placeholder="Email (optional now, required at first login)" />
             <div>
               <div class="small muted" style="margin-bottom:6px;">Role</div>
               <select id="accessRole">
@@ -1552,7 +1480,7 @@ function portalAccessView() {
                 <option value="Admin">Admin</option>
               </select>
             </div>
-            <div class="small muted" style="display:flex;align-items:center;">New accounts start with temporary password <strong style="margin-left:6px;">changeme123</strong> and must complete first-login setup.</div>
+            <div class="small muted" style="display:flex;align-items:center;">New accounts start with temporary password <strong style="margin-left:6px;">changeme123</strong></div>
           </div>
           <div class="button-row section">
             <button class="btn dark" id="saveAccessUserBtn">Add Access Person</button>
@@ -1576,18 +1504,11 @@ function portalAccessView() {
         <div><h2>Current Portal Access</h2><div class="sub">Activate, deactivate, or reset accounts without adding them to worker compliance tracking.</div></div>
       </div>
       <div class="section">
-        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
           ${rows.map(row => `<tr>
             <td>${escapeHtml(row.name || '-')}</td>
             <td>${escapeHtml(row.username || '-')}</td>
-            <td>${escapeHtml(row.email || 'Needs first-login setup')}</td>
-            <td>
-              ${row.source === 'Portal Access' ? `
-                <select data-set-access-role="${escapeHtml(row.username)}" style="min-width:120px;">
-                  ${['Admin','Office','PM'].map(role => `<option value="${role}" ${String(row.role || '') === role ? 'selected' : ''}>${role}</option>`).join('')}
-                </select>
-              ` : escapeHtml(row.role || '-')}
-            </td>
+            <td>${escapeHtml(row.role || '-')}</td>
             <td>${escapeHtml(row.source || '-')}</td>
             <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
             <td>${escapeHtml(row.tempPassword || 'Hidden')}<div class="small muted">${escapeHtml(row.passwordStatus || '-')}</div></td>
@@ -1627,8 +1548,6 @@ function render() {
   const app = document.getElementById('app');
   if (!state.user) {
     app.innerHTML = loginView();
-  } else if (portalSetupRequired()) {
-    app.innerHTML = portalSetupView();
   } else if (state.user.role === 'Worker') {
     app.innerHTML = workerPortalView();
   } else {
@@ -1650,19 +1569,6 @@ function render() {
 }
 
 async function refreshData() {
-  if (portalSetupRequired()) {
-    state.workerPortal = null;
-    state.dashboard = { executiveSummary: [], counts: {} };
-    state.workers = [];
-    state.jobs = [];
-    state.uploads = [];
-    state.bloodwork = [];
-    state.alerts = [];
-    state.admin = null;
-    state.accessUsers = [];
-    state.auditLog = [];
-    return;
-  }
   if (state.user?.role === 'Worker' && state.user?.workerId) {
     const payload = await api('/api/worker-portal/' + state.user.workerId);
     state.workerPortal = payload;
@@ -1728,85 +1634,31 @@ function bindEvents() {
   document.getElementById('loginBtn')?.addEventListener('click', async () => {
     const username = String(document.getElementById('loginUsername').value || '').trim().toLowerCase();
     const password = String(document.getElementById('loginPassword').value || '').trim();
+    const fallbackUsers = {
+      admin: { password: 'admin123', role: 'Admin', name: 'Admin User' },
+      office: { password: 'office123', role: 'Office', name: 'Office User' },
+      pm: { password: 'pm123', role: 'PM', name: 'Project Manager' }
+    };
     try {
       const result = await api('/api/login', { method: 'POST', body: { username, password } });
       state.user = result.user;
-      state.portalSetupStatus = '';
-      if (portalSetupRequired(result.user)) {
-        render();
-        return;
-      }
       await refreshData();
       render();
       return;
     } catch (e) {
-      document.getElementById('loginError').textContent = 'Login failed. Check your username and password.';
+      if (fallbackUsers[username] && fallbackUsers[username].password === password) {
+        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name };
+        await refreshData();
+        render();
+        return;
+      }
+      document.getElementById('loginError').textContent = 'Login failed. Use admin/admin123, office/office123, or pm/pm123';
     }
   });
 
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
-    state.portalSetupStatus = '';
     render();
-  });
-
-  document.getElementById('completePortalSetupBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('portalSetupStatus');
-    const email = String(document.getElementById('setupEmail')?.value || '').trim();
-    const currentPassword = String(document.getElementById('setupCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('setupNewPassword')?.value || '').trim();
-    const confirmPassword = String(document.getElementById('setupConfirmPassword')?.value || '').trim();
-    const needsPassword = state.user?.mustChangePassword === true || state.user?.mustCompleteSetup === true;
-    try {
-      if (status) {
-        status.textContent = 'Saving setup...';
-        status.style.color = '#64748b';
-      }
-      if (!email || !email.includes('@')) throw new Error('Enter a valid email address.');
-      if (!currentPassword) throw new Error('Enter your current password.');
-      if (needsPassword || newPassword || confirmPassword) {
-        if (newPassword.length < 6) throw new Error('New password must be at least 6 characters.');
-        if (newPassword !== confirmPassword) throw new Error('New passwords do not match.');
-      }
-      let result;
-      if (state.user?.role === 'Worker') {
-        result = await api('/api/worker-password-change', {
-          method: 'POST',
-          body: {
-            workerId: state.user.workerId,
-            username: state.user.username,
-            currentPassword,
-            newPassword,
-            email
-          }
-        });
-      } else {
-        result = await api('/api/account-password-change', {
-          method: 'POST',
-          body: {
-            username: state.user.username,
-            currentPassword,
-            newPassword,
-            email
-          }
-        });
-      }
-      state.user = {
-        ...state.user,
-        email: result.email || email,
-        mustChangePassword: false,
-        mustCompleteSetup: false
-      };
-      state.portalSetupStatus = '';
-      await refreshData();
-      render();
-    } catch (err) {
-      state.portalSetupStatus = err.message || 'Setup failed.';
-      if (status) {
-        status.textContent = state.portalSetupStatus;
-        status.style.color = '#991b1b';
-      }
-    }
   });
 
   document.getElementById('reportJobSelector')?.addEventListener('change', async (e) => {
@@ -2077,8 +1929,7 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const name = String(document.getElementById('accessName')?.value || '').trim();
       const username = String(document.getElementById('accessUsername')?.value || '').trim().toLowerCase();
       const role = String(document.getElementById('accessRole')?.value || 'Office').trim();
-      const email = String(document.getElementById('accessEmail')?.value || '').trim();
-      await api('/api/access-users', { method: 'POST', body: { name, username, role, email, active: true } });
+      await api('/api/access-users', { method: 'POST', body: { name, username, role, active: true } });
       await refreshData();
       state.view = 'access';
       render();
@@ -2119,68 +1970,6 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const updatedStatus = document.getElementById('accessUserStatus') || status;
       if (updatedStatus) {
         updatedStatus.textContent = err.message || 'Failed to update portal access account.';
-        updatedStatus.style.color = '#991b1b';
-      }
-    }
-  }));
-
-  document.querySelectorAll('[data-set-access-role]').forEach(select => select.addEventListener('change', async () => {
-    const username = String(select.dataset.setAccessRole || '').trim().toLowerCase();
-    const role = String(select.value || '').trim();
-    const confirmed = await mobileConfirm(`Change this portal access account to ${role}?`, 'Change Portal Access Role');
-    if (!confirmed) {
-      await refreshData();
-      state.view = 'access';
-      render();
-      return;
-    }
-    const status = document.getElementById('accessUserStatus');
-    if (status) {
-      status.textContent = 'Updating portal access role...';
-      status.style.color = '';
-    }
-    try {
-      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'PUT', body: { role } });
-      await refreshData();
-      state.view = 'access';
-      render();
-      const updatedStatus = document.getElementById('accessUserStatus');
-      if (updatedStatus) {
-        updatedStatus.textContent = `Portal access role updated to ${role}.`;
-        updatedStatus.style.color = '#166534';
-      }
-    } catch (err) {
-      const updatedStatus = document.getElementById('accessUserStatus') || status;
-      if (updatedStatus) {
-        updatedStatus.textContent = err.message || 'Failed to update portal access role.';
-        updatedStatus.style.color = '#991b1b';
-      }
-    }
-  }));
-
-  document.querySelectorAll('[data-delete-access-user]').forEach(btn => btn.addEventListener('click', async () => {
-    const username = String(btn.dataset.deleteAccessUser || '').trim().toLowerCase();
-    const confirmed = await mobileConfirm('Delete this portal access account? This only deletes the Portal Access login and does not remove any worker record.', 'Delete Portal Access Account');
-    if (!confirmed) return;
-    const status = document.getElementById('accessUserStatus');
-    if (status) {
-      status.textContent = 'Deleting portal access account...';
-      status.style.color = '';
-    }
-    try {
-      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'DELETE' });
-      await refreshData();
-      state.view = 'access';
-      render();
-      const updatedStatus = document.getElementById('accessUserStatus');
-      if (updatedStatus) {
-        updatedStatus.textContent = 'Portal access account deleted.';
-        updatedStatus.style.color = '#166534';
-      }
-    } catch (err) {
-      const updatedStatus = document.getElementById('accessUserStatus') || status;
-      if (updatedStatus) {
-        updatedStatus.textContent = err.message || 'Failed to delete portal access account.';
         updatedStatus.style.color = '#991b1b';
       }
     }
