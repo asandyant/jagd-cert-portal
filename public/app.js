@@ -1095,7 +1095,6 @@ function certificationRulesCard() {
     <div class="card">
       <div class="card-header">
         <div><h2>Certification Alert Rules</h2><div class="sub">Master rules for how often key certifications should be renewed. These rules feed the worker email preview and reminders without changing existing worker records.</div></div>
-        <button class="btn dark" id="saveCertificationRulesBtn">Save Certification Rules</button>
       </div>
       <div class="section">
         <div class="tag"><strong>Training Pack:</strong> yearly</div>
@@ -1123,12 +1122,15 @@ function certificationRulesCard() {
         </div>
         <div class="section button-row">
           <input id="addCertificationRuleNote" placeholder="Optional note" />
-          <button class="btn light" id="addCertificationRuleBtn">Add Rule</button>
+          <button class="btn dark" id="addCertificationRuleBtn">Add Rule</button>
         </div>
       </div>
-      <div class="small muted section">Expiration and reminder numbers are in days. Leave worker alerts OFF until the preview looks right.</div>
+      <div class="small muted section">Expiration and reminder numbers are in days. Add and Delete auto-save after confirmation. If you edit an existing row, click Save Edited Rules.</div>
       <div class="section">${certificationRulesTable()}</div>
-      <div id="certRuleSaveStatus" class="small muted section"></div>
+      <div class="section button-row">
+        <button class="btn dark" id="saveCertificationRulesBtn">Save Edited Rules</button>
+        <div id="certRuleSaveStatus" class="small muted" style="align-self:center;"></div>
+      </div>
     </div>`;
 }
 
@@ -1644,7 +1646,7 @@ If you click OK, this rule will be added and saved automatically.`);
     const status = document.getElementById('certRuleSaveStatus');
     const input = document.querySelector(`[data-cert-rule-expiration="${index}"]`);
     if (input) input.focus();
-    if (status) status.textContent = `Editing ${rule?.certName || 'certification rule'}. Change the row values, then click Save Certification Rules.`;
+    if (status) status.textContent = `Editing ${rule?.certName || 'certification rule'}. Change the row values, then click Save Edited Rules.`;
   }));
 
   document.querySelectorAll('[data-delete-cert-rule]').forEach(btn => btn.addEventListener('click', async () => {
