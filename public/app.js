@@ -1827,13 +1827,15 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       await refreshData();
       state.view = 'access';
       render();
-      window.alert('Portal access account added.');
+      const updatedStatus = document.getElementById('accessUserStatus');
+      if (updatedStatus) {
+        updatedStatus.textContent = 'Portal access account added.';
+        updatedStatus.style.color = '#166534';
+      }
     } catch (err) {
       if (status) {
         status.textContent = err.message || 'Failed to add access account.';
         status.style.color = '#991b1b';
-      } else {
-        window.alert(err.message || 'Failed to add access account.');
       }
     }
   });
@@ -1841,33 +1843,59 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
   document.querySelectorAll('[data-toggle-access-user]').forEach(btn => btn.addEventListener('click', async () => {
     const [username, action] = String(btn.dataset.toggleAccessUser || '').split('|');
     const active = action === 'activate';
-    const confirmed = window.confirm(`${active ? 'Activate' : 'Deactivate'} this portal access account?`);
+    const confirmed = await mobileConfirm((active ? 'Activate' : 'Deactivate') + ' this portal access account?', (active ? 'Activate' : 'Deactivate') + ' Portal Access');
     if (!confirmed) return;
+    const status = document.getElementById('accessUserStatus');
+    if (status) {
+      status.textContent = (active ? 'Activating' : 'Deactivating') + ' portal access account...';
+      status.style.color = '';
+    }
     try {
       await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'PUT', body: { active } });
       await refreshData();
       state.view = 'access';
       render();
+      const updatedStatus = document.getElementById('accessUserStatus');
+      if (updatedStatus) {
+        updatedStatus.textContent = 'Portal access account ' + (active ? 'activated' : 'deactivated') + '.';
+        updatedStatus.style.color = '#166534';
+      }
     } catch (err) {
-      window.alert(err.message || 'Failed to update portal access account.');
+      const updatedStatus = document.getElementById('accessUserStatus') || status;
+      if (updatedStatus) {
+        updatedStatus.textContent = err.message || 'Failed to update portal access account.';
+        updatedStatus.style.color = '#991b1b';
+      }
     }
   }));
 
   document.querySelectorAll('[data-reset-access-user]').forEach(btn => btn.addEventListener('click', async () => {
     const username = String(btn.dataset.resetAccessUser || '').trim().toLowerCase();
-    const confirmed = window.confirm('Reset this portal access account back to its temporary password? This action cannot be undone.');
+    const confirmed = await mobileConfirm('Reset this portal access account back to its temporary password? This action cannot be undone.', 'Reset Portal Access Password');
     if (!confirmed) return;
+    const status = document.getElementById('accessUserStatus');
+    if (status) {
+      status.textContent = 'Resetting portal access password...';
+      status.style.color = '';
+    }
     try {
       const result = await api(`/api/access-users/${encodeURIComponent(username)}/reset-password`, { method: 'POST' });
       await refreshData();
       state.view = 'access';
       render();
-      window.alert(`Password reset. Temporary password: ${result.tempPassword}`);
+      const updatedStatus = document.getElementById('accessUserStatus');
+      if (updatedStatus) {
+        updatedStatus.textContent = 'Password reset. Temporary password: ' + result.tempPassword;
+        updatedStatus.style.color = '#166534';
+      }
     } catch (err) {
-      window.alert(err.message || 'Failed to reset portal access password.');
+      const updatedStatus = document.getElementById('accessUserStatus') || status;
+      if (updatedStatus) {
+        updatedStatus.textContent = err.message || 'Failed to reset portal access password.';
+        updatedStatus.style.color = '#991b1b';
+      }
     }
   }));
-
 
   document.querySelectorAll('[data-nav]').forEach(btn => btn.addEventListener('click', async () => {
     state.view = btn.dataset.nav;
