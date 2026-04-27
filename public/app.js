@@ -319,7 +319,11 @@ function workerTable(items, options = {}) {
               </td>
               <td>
                 <div>${badge(employment)}</div>
-                ${showEmploymentToggle ? `<div class="filter-row" style="margin-top:8px;"><button class="${employment==='Active' ? 'active' : ''}" data-set-employment="${w.id}|Active">Active</button><button class="${employment==='Inactive' ? 'active' : ''}" data-set-employment="${w.id}|Inactive">Inactive</button></div>` : ''}
+                ${showEmploymentToggle ? `
+                  <select data-set-employment="${w.id}" style="margin-top:8px;min-width:140px;">
+                    ${['Active','Inactive','Terminated','Archived'].map(status => `<option value="${status}" ${employment===status ? 'selected' : ''}>${status}</option>`).join('')}
+                  </select>
+                ` : ''}
               </td>
               <td>${badge(w.status)}</td>
               <td>${w.nextIssue || '-'}</td>
@@ -470,9 +474,13 @@ function selectedWorkerSection() {
           <div class="card" style="background:#f8fafc;box-shadow:none;"><div class="small muted">Next Issue</div><div style="margin-top:6px;font-weight:700;">${worker.nextIssue}</div></div>
         </div>
         <div class="card section" style="background:#f8fafc;box-shadow:none;">
-          <div class="small muted">Employment Toggle</div>
-          <div class="filter-row" style="margin-top:10px;">
-            ${canManageWorkers() ? ['Active','Inactive'].map(status => `<button class="${(worker.employmentStatus || 'Active')===status ? 'active' : ''}" data-set-employment="${worker.id}|${status}">${status}</button>`).join('') : '<span class="small muted">Admin only</span>'}
+          <div class="small muted">Employment Status</div>
+          <div style="margin-top:10px;">
+            ${canManageWorkers() ? `
+              <select data-set-employment="${worker.id}">
+                ${['Active','Inactive','Terminated','Archived'].map(status => `<option value="${status}" ${(worker.employmentStatus || 'Active')===status ? 'selected' : ''}>${status}</option>`).join('')}
+              </select>
+            ` : '<span class="small muted">Admin only</span>'}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
           <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
@@ -2041,12 +2049,21 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
     render();
   }));
 
-  document.querySelectorAll('[data-set-employment]').forEach(el => el.addEventListener('click', async () => {
-    const [id, employmentStatus] = el.dataset.setEmployment.split('|');
-    await api('/api/workers/' + id, { method: 'PUT', body: { employmentStatus } });
-    await refreshData();
-    render();
-  }));
+  document.querySelectorAll('[data-set-employment]').forEach(el => {
+    const handler = async () => {
+      let id = el.dataset.setEmployment;
+      let employmentStatus = el.value;
+      if (String(id || '').includes('|')) {
+        const parts = String(id).split('|');
+        id = parts[0];
+        employmentStatus = parts[1];
+      }
+      await api('/api/workers/' + id, { method: 'PUT', body: { employmentStatus } });
+      await refreshData();
+      render();
+    };
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'click', handler);
+  });
 
   document.querySelectorAll('[data-set-current-job]').forEach(el => el.addEventListener('change', async () => {
     const id = el.dataset.setCurrentJob;
