@@ -287,6 +287,10 @@ function canManageWorkers() {
   return String(state.user?.role || '') === 'Admin';
 }
 
+function canAddWorkers() {
+  return ['Admin', 'Office'].includes(String(state.user?.role || ''));
+}
+
 function canViewAdmin() {
   return String(state.user?.role || '') === 'Admin';
 }
@@ -438,7 +442,7 @@ function employeesView() {
     <div class="card">
       <div class="card-header">
         <div><h2>Employees</h2><div class="sub">Search the full imported roster and open worker profiles.</div></div>
-        ${canManageWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
+        ${canAddWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
       </div>
       <div class="section filter-row">
         ${[['all','All Workers'],['active','Active'],['inactive','Inactive'],['terminated','Terminated'],['archived','Archived'],['qualified','Qualified'],['expiring','Expiring Soon'],['attention','Needs Attention'],['bloodwork','Has Bloodwork']].map(([id,label])=>`<button class="${state.employeeFilter===id?'active':''}" data-worker-filter="${id}">${label}</button>`).join('')}
@@ -1310,6 +1314,7 @@ function renderWorkerModal() {
   return `
     <div class="modal"><div class="modal-box">
       <div class="flex space-between"><h2>Add Worker</h2><button class="btn light" id="closeWorkerModal">Close</button></div>
+      <div class="small muted" style="margin-top:8px;">Admin and Office can add workers. Higher-risk edits and deletes remain Admin controlled.</div>
       <div class="grid grid-2 section">
         <input id="newWorkerFirst" placeholder="First name" />
         <input id="newWorkerLast" placeholder="Last name" />

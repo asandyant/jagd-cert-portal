@@ -1140,6 +1140,7 @@ app.get('/api/workers/:id', (req, res) => {
 });
 
 app.post('/api/workers', (req, res) => {
+  if (!requireAdminOrOffice(req, res)) return;
   const store = readStore();
   const body = req.body || {};
   const worker = {
