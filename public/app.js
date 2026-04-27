@@ -242,14 +242,14 @@ function loginView() {
       </div>
       <div class="grid grid-2 section">
         <div class="card">
-          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use office/admin test logins below to open the portal. Worker logins stay tied to each worker profile.</div></div></div>
+          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use your assigned Portal Access account or worker login to open the portal.</div></div></div>
           <div class="section grid grid-2">
-            <div><div class="small muted">Username</div><input id="loginUsername" value="admin" /></div>
-            <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="admin123" /></div>
+            <div><div class="small muted">Username</div><input id="loginUsername" value="" autocomplete="username" /></div>
+            <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="" autocomplete="current-password" /></div>
           </div>
           <div class="section button-row">
             <button class="btn dark" id="loginBtn">Enter Portal</button>
-            <div class="pill">admin/admin123 · office/office123 · pm/pm123</div>
+            <div class="pill">Use your assigned login</div>
           </div>
           <div id="loginError" class="small" style="color:#991b1b;margin-top:10px;"></div>
         </div>
@@ -1595,7 +1595,6 @@ function portalAccessView() {
               <div class="button-row">
                 ${row.source === 'Portal Access' ? `<button class="btn light" data-toggle-access-user="${escapeHtml(row.username)}|${row.active === false ? 'activate' : 'deactivate'}">${row.active === false ? 'Activate' : 'Deactivate'}</button>` : ''}
                 ${(row.resettable && row.role !== 'Admin') ? `<button class="btn light" data-reset-access-user="${escapeHtml(row.username)}">Reset Password</button>` : `<span class="small muted">Manual only</span>`}
-                ${row.source === 'Portal Access' ? `<button class="btn light" data-delete-access-user="${escapeHtml(row.username)}">Delete</button>` : ''}
               </div>
             </td>
           </tr>`).join('')}
@@ -1729,11 +1728,6 @@ function bindEvents() {
   document.getElementById('loginBtn')?.addEventListener('click', async () => {
     const username = String(document.getElementById('loginUsername').value || '').trim().toLowerCase();
     const password = String(document.getElementById('loginPassword').value || '').trim();
-    const fallbackUsers = {
-      admin: { password: 'admin123', role: 'Admin', name: 'Admin User' },
-      office: { password: 'office123', role: 'Office', name: 'Office User' },
-      pm: { password: 'pm123', role: 'PM', name: 'Project Manager' }
-    };
     try {
       const result = await api('/api/login', { method: 'POST', body: { username, password } });
       state.user = result.user;
@@ -1746,13 +1740,7 @@ function bindEvents() {
       render();
       return;
     } catch (e) {
-      if (fallbackUsers[username] && fallbackUsers[username].password === password) {
-        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name, email: '', mustChangePassword: false, mustCompleteSetup: false };
-        await refreshData();
-        render();
-        return;
-      }
-      document.getElementById('loginError').textContent = 'Login failed. Use admin/admin123, office/office123, or pm/pm123';
+      document.getElementById('loginError').textContent = 'Login failed. Check your username and password.';
     }
   });
 
