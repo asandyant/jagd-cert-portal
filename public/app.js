@@ -1571,26 +1571,46 @@ function bindEvents() {
     const status = document.getElementById('certRuleSaveStatus');
     const certName = document.getElementById('addCertificationRuleName')?.value || '';
     if (!certName) {
+      alert('Please select a certification before adding a rule.');
       if (status) status.textContent = 'Select a certification before adding a rule.';
       return;
     }
     const rules = [...(state.certificationAlertRules || state.admin?.certificationAlertRules || [])];
     const exists = rules.some(rule => normalizeCertName(rule.certName || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
     if (exists) {
+      alert(`${certName} already has a certification alert rule.`);
       if (status) status.textContent = 'That certification already has a rule.';
       return;
     }
+
+    const expirationDays = Number(document.getElementById('addCertificationRuleExpiration')?.value || 365);
+    const reminderDays = Number(document.getElementById('addCertificationRuleReminder')?.value || 30);
+    const note = document.getElementById('addCertificationRuleNote')?.value || '';
+
+    if (!Number.isFinite(expirationDays) || expirationDays < 0) {
+      alert('Please enter a valid Expires Every number.');
+      return;
+    }
+    if (!Number.isFinite(reminderDays) || reminderDays < 0) {
+      alert('Please enter a valid Reminder Window number.');
+      return;
+    }
+
+    const ok = confirm(`Add certification alert rule for ${certName}?\n\nExpires Every: ${expirationDays} day(s)\nReminder Window: ${reminderDays} day(s)\n\nThis will add the rule to the list, but it will not be permanent until you click Save Certification Rules.`);
+    if (!ok) return;
+
     const cert = (state.certs || []).find(item => normalizeCertName(item.name || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
     rules.push({
       certName,
       aliases: cert?.aliases?.length ? cert.aliases : [certName],
       enabled: true,
-      expirationDays: Number(document.getElementById('addCertificationRuleExpiration')?.value || 365),
-      reminderDays: Number(document.getElementById('addCertificationRuleReminder')?.value || 30),
-      note: document.getElementById('addCertificationRuleNote')?.value || ''
+      expirationDays,
+      reminderDays,
+      note
     });
     state.certificationAlertRules = rules;
     if (state.admin) state.admin.certificationAlertRules = rules;
+    alert(`${certName} rule added. Click Save Certification Rules to make it permanent.`);
     render();
   });
 
