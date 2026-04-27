@@ -26,6 +26,7 @@ const state = {
   auditLog: [],
   pendingScrollTarget: null,
   workerPortal: null,
+  portalSetupStatus: '',
   modals: { worker: false, job: false, jobEdit: false, addCertDropdown: false }
 };
 
@@ -536,66 +537,64 @@ function selectedWorkerSection() {
 }
 
 
-function workerSetupView() {
-  const worker = state.workerPortal?.worker || {};
-  const mustChange = state.user?.mustChangePassword || worker.portalMustChangePassword !== false;
-  const missingEmail = !String(worker.email || '').trim();
-  return `
-    <div class="container">
-      <div class="hero">
-        <div class="hero-top">
-          <div>
-            <h1 style="margin:10px 0 0;font-size:34px;">Complete Worker Portal Setup</h1>
-            <div class="sub" style="color:#cbd5e1;">Please finish this one-time setup before entering your worker portal.</div>
-          </div>
-          <div class="right-note">
-            <span class="pill">${escapeHtml(worker.name || state.user?.name || 'Worker')}</span>
-            <button class="btn light" id="logoutBtn">Log Out</button>
-          </div>
-        </div>
-      </div>
 
-      <div class="section grid grid-2">
-        <div class="card">
-          <div class="card-header">
+function portalSetupRequired(user = state.user) {
+  if (!user) return false;
+  if (['Admin', 'Office', 'PM', 'Worker'].includes(String(user.role || ''))) {
+    return user.mustCompleteSetup === true || user.mustChangePassword === true || !String(user.email || '').trim();
+  }
+  return false;
+}
+
+function portalSetupView() {
+  const user = state.user || {};
+  const isWorker = String(user.role || '') === 'Worker';
+  const needsPassword = user.mustChangePassword === true || user.mustCompleteSetup === true;
+  const roleLabel = isWorker ? 'Worker' : (user.role || 'Portal');
+  return `
+    <div class="login-shell">
+      <div class="login-card">
+        <div class="hero">
+          <div class="hero-top">
             <div>
-              <h2>Required Setup</h2>
-              <div class="sub">Worker email alerts need a valid email address. Temporary passwords must be changed before access.</div>
+              <h1 style="margin:10px 0 0;font-size:34px;">Complete Portal Setup</h1>
+              <div class="sub" style="color:#cbd5e1;">${escapeHtml(roleLabel)} account setup is required before entering the portal.</div>
+            </div>
+            <div class="right-note">
+              <span class="pill">${escapeHtml(user.name || user.username || '')}</span>
+              <button class="btn light" id="logoutBtn">Log Out</button>
             </div>
           </div>
-          <div class="section">
-            ${mustChange ? '<div class="tag">Password change required</div>' : ''}
-            ${missingEmail ? '<div class="tag">Email address required</div>' : ''}
+        </div>
+        <div class="card section">
+          <div class="card-header">
+            <div>
+              <h2>Set Email and Password</h2>
+              <div class="sub">This email will be used for portal alerts and account communication.</div>
+            </div>
           </div>
-          <div class="section grid grid-2">
+          <div class="grid grid-2 section">
             <div>
               <div class="small muted" style="margin-bottom:6px;">Email Address</div>
-              <input id="workerSetupEmail" type="email" value="${escapeHtml(worker.email || state.user?.email || '')}" placeholder="your@email.com" />
+              <input id="setupEmail" type="email" value="${escapeHtml(user.email || '')}" placeholder="name@email.com" />
             </div>
             <div>
               <div class="small muted" style="margin-bottom:6px;">Current Password</div>
-              <input id="workerSetupCurrentPassword" type="password" placeholder="Current password" />
+              <input id="setupCurrentPassword" type="password" placeholder="Current temporary password" />
             </div>
             <div>
-              <div class="small muted" style="margin-bottom:6px;">New Password ${mustChange ? '' : '(optional)'}</div>
-              <input id="workerSetupNewPassword" type="password" placeholder="New password" />
+              <div class="small muted" style="margin-bottom:6px;">New Password</div>
+              <input id="setupNewPassword" type="password" placeholder="New password" />
             </div>
             <div>
-              <div class="small muted" style="margin-bottom:6px;">Confirm New Password ${mustChange ? '' : '(optional)'}</div>
-              <input id="workerSetupConfirmPassword" type="password" placeholder="Confirm new password" />
+              <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
+              <input id="setupConfirmPassword" type="password" placeholder="Confirm new password" />
             </div>
           </div>
+          <div class="section small muted">${needsPassword ? 'You must change the temporary password before continuing.' : 'Enter your current password to save your email. You may also set a new password here.'}</div>
           <div class="section button-row">
-            <button class="btn dark" id="workerSetupSaveBtn">Save and Enter Portal</button>
-            <div id="workerSetupStatus" class="small muted"></div>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Why this is needed</h2>
-          <div class="section">
-            <div class="tag">Email is used for certification reminders.</div>
-            <div class="tag">Only active workers receive alerts.</div>
-            <div class="tag">Your uploaded records still go to office review.</div>
+            <button class="btn dark" id="completePortalSetupBtn">Complete Setup</button>
+            <div id="portalSetupStatus" class="small muted">${escapeHtml(state.portalSetupStatus || '')}</div>
           </div>
         </div>
       </div>
@@ -669,18 +668,6 @@ function workerPortalView() {
           <div class="card">
             <div class="card-header"><div><h2>My Alerts</h2><div class="sub">Only your own records show here.</div></div></div>
             <div class="section">${(payload.alerts || []).length ? payload.alerts.map(a => `<div class="tag"><strong>${a.title}</strong>: ${a.detail}</div>`).join('') : '<div class="muted">No active alerts right now.</div>'}</div>
-          </div>
-        </div>
-
-        <div class="card section">
-          <div class="card-header"><div><h2>My Email Alerts</h2><div class="sub">This email is used for certification reminders.</div></div></div>
-          <div class="section grid grid-2">
-            <input id="workerPortalEmail" type="email" value="${escapeHtml(worker.email || '')}" placeholder="your@email.com" />
-            <input id="workerPortalCurrentPassword" type="password" placeholder="Current password required to save email" />
-          </div>
-          <div class="section button-row">
-            <button class="btn dark" id="workerPortalSaveEmailBtn">Save Email</button>
-            <div id="workerPortalEmailStatus" class="small muted"></div>
           </div>
         </div>
 
@@ -1550,6 +1537,7 @@ function portalAccessView() {
           <div class="grid grid-2 section">
             <input id="accessName" placeholder="Full name" />
             <input id="accessUsername" placeholder="Username (lowercase)" />
+            <input id="accessEmail" type="email" placeholder="Email (optional now, required at first login)" />
             <div>
               <div class="small muted" style="margin-bottom:6px;">Role</div>
               <select id="accessRole">
@@ -1558,7 +1546,7 @@ function portalAccessView() {
                 <option value="Admin">Admin</option>
               </select>
             </div>
-            <div class="small muted" style="display:flex;align-items:center;">New accounts start with temporary password <strong style="margin-left:6px;">changeme123</strong></div>
+            <div class="small muted" style="display:flex;align-items:center;">New accounts start with temporary password <strong style="margin-left:6px;">changeme123</strong> and must complete first-login setup.</div>
           </div>
           <div class="button-row section">
             <button class="btn dark" id="saveAccessUserBtn">Add Access Person</button>
@@ -1582,10 +1570,11 @@ function portalAccessView() {
         <div><h2>Current Portal Access</h2><div class="sub">Activate, deactivate, or reset accounts without adding them to worker compliance tracking.</div></div>
       </div>
       <div class="section">
-        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
+        ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Source</th><th>Status</th><th>Password</th><th>Action</th></tr></thead><tbody>
           ${rows.map(row => `<tr>
             <td>${escapeHtml(row.name || '-')}</td>
             <td>${escapeHtml(row.username || '-')}</td>
+            <td>${escapeHtml(row.email || 'Needs first-login setup')}</td>
             <td>${escapeHtml(row.role || '-')}</td>
             <td>${escapeHtml(row.source || '-')}</td>
             <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
@@ -1626,10 +1615,10 @@ function render() {
   const app = document.getElementById('app');
   if (!state.user) {
     app.innerHTML = loginView();
+  } else if (portalSetupRequired()) {
+    app.innerHTML = portalSetupView();
   } else if (state.user.role === 'Worker') {
-    const worker = state.workerPortal?.worker || {};
-    const needsSetup = !!state.user.setupRequired || !!state.user.mustChangePassword || worker.portalMustChangePassword !== false || !String(worker.email || '').trim();
-    app.innerHTML = needsSetup ? workerSetupView() : workerPortalView();
+    app.innerHTML = workerPortalView();
   } else {
     let view = dashboardView();
     if (state.view === 'employees') view = employeesView();
@@ -1649,6 +1638,19 @@ function render() {
 }
 
 async function refreshData() {
+  if (portalSetupRequired()) {
+    state.workerPortal = null;
+    state.dashboard = { executiveSummary: [], counts: {} };
+    state.workers = [];
+    state.jobs = [];
+    state.uploads = [];
+    state.bloodwork = [];
+    state.alerts = [];
+    state.admin = null;
+    state.accessUsers = [];
+    state.auditLog = [];
+    return;
+  }
   if (state.user?.role === 'Worker' && state.user?.workerId) {
     const payload = await api('/api/worker-portal/' + state.user.workerId);
     state.workerPortal = payload;
@@ -1722,12 +1724,17 @@ function bindEvents() {
     try {
       const result = await api('/api/login', { method: 'POST', body: { username, password } });
       state.user = result.user;
+      state.portalSetupStatus = '';
+      if (portalSetupRequired(result.user)) {
+        render();
+        return;
+      }
       await refreshData();
       render();
       return;
     } catch (e) {
       if (fallbackUsers[username] && fallbackUsers[username].password === password) {
-        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name };
+        state.user = { username, role: fallbackUsers[username].role, name: fallbackUsers[username].name, email: '', mustChangePassword: false, mustCompleteSetup: false };
         await refreshData();
         render();
         return;
@@ -1738,88 +1745,66 @@ function bindEvents() {
 
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
+    state.portalSetupStatus = '';
     render();
   });
 
-  document.getElementById('workerSetupSaveBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('workerSetupStatus');
-    const email = String(document.getElementById('workerSetupEmail')?.value || '').trim();
-    const currentPassword = String(document.getElementById('workerSetupCurrentPassword')?.value || '').trim();
-    const newPassword = String(document.getElementById('workerSetupNewPassword')?.value || '').trim();
-    const confirmPassword = String(document.getElementById('workerSetupConfirmPassword')?.value || '').trim();
-    const mustChange = !!state.user?.mustChangePassword || state.workerPortal?.worker?.portalMustChangePassword !== false;
-    if (status) status.textContent = '';
-    if (!email.includes('@')) {
-      if (status) status.textContent = 'Please enter a valid email address.';
-      return;
-    }
-    if (!currentPassword) {
-      if (status) status.textContent = 'Current password is required.';
-      return;
-    }
-    if (mustChange && newPassword.length < 6) {
-      if (status) status.textContent = 'New password must be at least 6 characters.';
-      return;
-    }
-    if (newPassword || confirmPassword) {
-      if (newPassword !== confirmPassword) {
-        if (status) status.textContent = 'New password and confirm password must match.';
-        return;
+  document.getElementById('completePortalSetupBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('portalSetupStatus');
+    const email = String(document.getElementById('setupEmail')?.value || '').trim();
+    const currentPassword = String(document.getElementById('setupCurrentPassword')?.value || '').trim();
+    const newPassword = String(document.getElementById('setupNewPassword')?.value || '').trim();
+    const confirmPassword = String(document.getElementById('setupConfirmPassword')?.value || '').trim();
+    const needsPassword = state.user?.mustChangePassword === true || state.user?.mustCompleteSetup === true;
+    try {
+      if (status) {
+        status.textContent = 'Saving setup...';
+        status.style.color = '#64748b';
       }
-    }
-    try {
-      if (status) status.textContent = 'Saving setup...';
-      await api('/api/worker-setup', {
-        method: 'POST',
-        body: {
-          workerId: state.user.workerId,
-          username: state.user.username,
-          currentPassword,
-          newPassword,
-          email
-        }
-      });
-      state.user.mustChangePassword = false;
-      state.user.setupRequired = false;
-      state.user.email = email;
+      if (!email || !email.includes('@')) throw new Error('Enter a valid email address.');
+      if (!currentPassword) throw new Error('Enter your current password.');
+      if (needsPassword || newPassword || confirmPassword) {
+        if (newPassword.length < 6) throw new Error('New password must be at least 6 characters.');
+        if (newPassword !== confirmPassword) throw new Error('New passwords do not match.');
+      }
+      let result;
+      if (state.user?.role === 'Worker') {
+        result = await api('/api/worker-password-change', {
+          method: 'POST',
+          body: {
+            workerId: state.user.workerId,
+            username: state.user.username,
+            currentPassword,
+            newPassword,
+            email
+          }
+        });
+      } else {
+        result = await api('/api/account-password-change', {
+          method: 'POST',
+          body: {
+            username: state.user.username,
+            currentPassword,
+            newPassword,
+            email
+          }
+        });
+      }
+      state.user = {
+        ...state.user,
+        email: result.email || email,
+        mustChangePassword: false,
+        mustCompleteSetup: false
+      };
+      state.portalSetupStatus = '';
       await refreshData();
       render();
     } catch (err) {
-      if (status) status.textContent = err.message || 'Setup failed.';
-    }
-  });
-
-  document.getElementById('workerPortalSaveEmailBtn')?.addEventListener('click', async () => {
-    const status = document.getElementById('workerPortalEmailStatus');
-    const email = String(document.getElementById('workerPortalEmail')?.value || '').trim();
-    const currentPassword = String(document.getElementById('workerPortalCurrentPassword')?.value || '').trim();
-    if (status) status.textContent = '';
-    if (!email.includes('@')) {
-      if (status) status.textContent = 'Please enter a valid email address.';
-      return;
-    }
-    if (!currentPassword) {
-      if (status) status.textContent = 'Current password is required to save email.';
-      return;
-    }
-    try {
-      if (status) status.textContent = 'Saving email...';
-      await api('/api/worker-setup', {
-        method: 'POST',
-        body: {
-          workerId: state.user.workerId,
-          username: state.user.username,
-          currentPassword,
-          email,
-          newPassword: ''
-        }
-      });
-      state.user.email = email;
-      await refreshData();
-      if (status) status.textContent = 'Email saved.';
-      render();
-    } catch (err) {
-      if (status) status.textContent = err.message || 'Email save failed.';
+      state.portalSetupStatus = err.message || 'Setup failed.';
+      if (status) {
+        status.textContent = state.portalSetupStatus;
+        status.style.color = '#991b1b';
+      }
     }
   });
 
@@ -2091,7 +2076,8 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const name = String(document.getElementById('accessName')?.value || '').trim();
       const username = String(document.getElementById('accessUsername')?.value || '').trim().toLowerCase();
       const role = String(document.getElementById('accessRole')?.value || 'Office').trim();
-      await api('/api/access-users', { method: 'POST', body: { name, username, role, active: true } });
+      const email = String(document.getElementById('accessEmail')?.value || '').trim();
+      await api('/api/access-users', { method: 'POST', body: { name, username, role, email, active: true } });
       await refreshData();
       state.view = 'access';
       render();

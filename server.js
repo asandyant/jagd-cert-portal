@@ -633,6 +633,7 @@ function getPortalAccessAccounts(store) {
     name: item.name,
     username: item.username,
     role: item.role,
+    email: '',
     active: true,
     passwordStatus: item.passwordStatus,
     tempPassword: item.passwordStatus === 'Default Password Active' ? item.defaultPassword : 'Hidden',
@@ -648,6 +649,7 @@ function getPortalAccessAccounts(store) {
       name: user.name || user.username,
       username: String(user.username || '').trim().toLowerCase(),
       role: user.role || 'Office',
+      email: normalizeEmail(user.email || ''),
       active: user.active !== false,
       passwordStatus: user.password && user.tempPassword && user.password === user.tempPassword ? 'Temp Password Active' : 'Password Changed',
       tempPassword: user.password && user.tempPassword && user.password === user.tempPassword ? user.tempPassword : 'Hidden',
@@ -972,13 +974,13 @@ app.post('/api/login', (req, res) => {
 
   // Emergency built-in access path so the portal can always be recovered.
   if (username === 'admin' && password === 'admin123') {
-    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, mustChangePassword: false } });
+    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
   }
   if (username === 'office' && password === 'office123') {
-    return res.json({ user: { username: 'office', role: 'Office', name: 'Office User', workerId: null, mustChangePassword: false } });
+    return res.json({ user: { username: 'office', role: 'Office', name: 'Office User', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
   }
   if (username === 'pm' && password === 'pm123') {
-    return res.json({ user: { username: 'pm', role: 'PM', name: 'Project Manager', workerId: null, mustChangePassword: false } });
+    return res.json({ user: { username: 'pm', role: 'PM', name: 'Project Manager', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
   }
 
   const fallbackUsers = [
@@ -990,8 +992,12 @@ app.post('/api/login', (req, res) => {
   const storeUsers = (store.users || []).map(u => ({
     ...u,
     username: String(u.username || '').trim().toLowerCase(),
-    password: String(u.password || '').trim()
-  }));
+    password: String(u.password || '').trim(),
+    email: normalizeEmail(u.email || ''),
+    mustChangePassword: !!u.mustChangePassword,
+    active: u.active !== false,
+    source: 'Portal Access'
+  })).filter(u => u.active !== false);
 
   const workerUsers = (store.workers || []).map(w => ({
     username: String(w.portalUsername || '').trim().toLowerCase(),
@@ -999,7 +1005,7 @@ app.post('/api/login', (req, res) => {
     role: 'Worker',
     name: w.name,
     workerId: w.id,
-    email: w.email || '',
+    email: normalizeEmail(w.email || w.workerEmail || ''),
     mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
 
@@ -1007,8 +1013,10 @@ app.post('/api/login', (req, res) => {
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
-  const setupRequired = String(user.role || '') === 'Worker' ? (!!user.mustChangePassword || !isValidEmail(user.email || '')) : false;
-  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, mustChangePassword: !!user.mustChangePassword, email: user.email || '', setupRequired } });
+  const email = normalizeEmail(user.email || '');
+  const builtInDefault = ['admin', 'office', 'pm'].includes(user.username) && !user.source;
+  const mustCompleteSetup = !builtInDefault && (!!user.mustChangePassword || !isValidEmail(email));
+  res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, email, mustChangePassword: !!user.mustChangePassword, mustCompleteSetup } });
 });
 
 
@@ -1017,9 +1025,11 @@ app.post('/api/account-password-change', (req, res) => {
   const username = String(req.body?.username || '').trim().toLowerCase();
   const currentPassword = String(req.body?.currentPassword || '').trim();
   const newPassword = String(req.body?.newPassword || '').trim();
+  const email = normalizeEmail(req.body?.email || '');
 
   if (!username) return res.status(400).send('Username is required.');
   if (!currentPassword) return res.status(400).send('Current password is required.');
+  if (!isValidEmail(email)) return res.status(400).send('A valid email address is required.');
   if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
   if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
 
@@ -1041,13 +1051,10 @@ app.post('/api/account-password-change', (req, res) => {
 
   if (storeUser) {
     storeUser.password = newPassword;
+    storeUser.email = email;
+    storeUser.mustChangePassword = false;
   } else {
-    storeUser = {
-      username,
-      password: newPassword,
-      role: fallbackUser.role,
-      name: fallbackUser.name
-    };
+    storeUser = { username, password: newPassword, role: fallbackUser.role, name: fallbackUser.name, email, mustChangePassword: false };
     store.users.push(storeUser);
   }
 
@@ -1059,7 +1066,7 @@ app.post('/api/account-password-change', (req, res) => {
     { username: storeUser.username, role: storeUser.role, name: storeUser.name }
   );
   writeStore(store);
-  res.json({ ok: true, username: storeUser.username, role: storeUser.role });
+  res.json({ ok: true, username: storeUser.username, role: storeUser.role, email: storeUser.email || '', mustChangePassword: false, mustCompleteSetup: false });
 });
 
 
@@ -1213,28 +1220,6 @@ app.post('/api/worker-password-change', (req, res) => {
   const username = String(req.body?.username || '').trim().toLowerCase();
   const currentPassword = String(req.body?.currentPassword || '').trim();
   const newPassword = String(req.body?.newPassword || '').trim();
-
-  const worker = (store.workers || []).find(w => String(w.id) === workerId && String(w.portalUsername || '').trim().toLowerCase() === username);
-  if (!worker) return res.status(404).send('Worker account not found.');
-  if (String(worker.portalPassword || 'worker123').trim() !== currentPassword) return res.status(401).send('Current password is incorrect.');
-  if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
-  if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
-
-  worker.portalPassword = newPassword;
-  worker.portalMustChangePassword = false;
-  appendAuditLog(store, req, 'Changed worker password', `${worker.name} updated portal password`, { workerId: worker.id, workerName: worker.name });
-  writeStore(store);
-  res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, mustChangePassword: false });
-});
-
-
-
-app.post('/api/worker-setup', (req, res) => {
-  const store = readStore();
-  const workerId = String(req.body?.workerId || '').trim();
-  const username = String(req.body?.username || '').trim().toLowerCase();
-  const currentPassword = String(req.body?.currentPassword || '').trim();
-  const newPassword = String(req.body?.newPassword || '').trim();
   const email = normalizeEmail(req.body?.email || '');
 
   const worker = (store.workers || []).find(w => String(w.id) === workerId && String(w.portalUsername || '').trim().toLowerCase() === username);
@@ -1242,23 +1227,16 @@ app.post('/api/worker-setup', (req, res) => {
   if (String(worker.portalPassword || 'worker123').trim() !== currentPassword) return res.status(401).send('Current password is incorrect.');
   if (!isValidEmail(email)) return res.status(400).send('A valid email address is required.');
 
-  const mustChangePassword = worker.portalMustChangePassword !== false;
-  if (mustChangePassword) {
-    if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
-    if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
-    worker.portalPassword = newPassword;
-    worker.portalMustChangePassword = false;
-  } else if (newPassword) {
+  if (worker.portalMustChangePassword || newPassword) {
     if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
     if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
     worker.portalPassword = newPassword;
     worker.portalMustChangePassword = false;
   }
-
   worker.email = email;
-  appendAuditLog(store, req, 'Completed worker portal setup', `${worker.name} updated portal email${newPassword ? ' and password' : ''}`, { workerId: worker.id, workerName: worker.name });
+  appendAuditLog(store, req, 'Completed worker portal setup', `${worker.name} updated password/email setup`, { workerId: worker.id, workerName: worker.name });
   writeStore(store);
-  res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, email: worker.email, mustChangePassword: false });
+  res.json({ ok: true, workerId: worker.id, username: worker.portalUsername, email: worker.email || '', mustChangePassword: false, mustCompleteSetup: false });
 });
 
 app.post('/api/workers/:id/bloodwork', (req, res) => {
@@ -1837,12 +1815,14 @@ app.post('/api/access-users', (req, res) => {
   const name = String(req.body?.name || '').trim();
   const username = String(req.body?.username || '').trim().toLowerCase();
   const role = String(req.body?.role || '').trim();
+  const email = normalizeEmail(req.body?.email || '');
   const active = req.body?.active !== false;
 
   if (!name) return res.status(400).send('Name is required.');
   if (!username) return res.status(400).send('Username is required.');
   if (!/^[a-z0-9._-]+$/.test(username)) return res.status(400).send('Username can only use lowercase letters, numbers, dots, dashes, and underscores.');
   if (!['Admin', 'Office', 'PM'].includes(role)) return res.status(400).send('Role must be Admin, Office, or PM.');
+  if (email && !isValidEmail(email)) return res.status(400).send('Enter a valid email address or leave it blank for first-login setup.');
 
   const workerUsernameTaken = (store.workers || []).some(w => String(w.portalUsername || '').trim().toLowerCase() === username);
   const existingUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
@@ -1860,8 +1840,9 @@ app.post('/api/access-users', (req, res) => {
     tempPassword,
     role,
     name,
+    email,
     active,
-    mustChangePassword: false
+    mustChangePassword: true
   };
   store.users.push(account);
   appendAuditLog(store, req, 'Added portal access account', `${name} · ${role} · ${username}`, { username, role, name });
@@ -1872,12 +1853,13 @@ app.post('/api/access-users', (req, res) => {
       name,
       username,
       role,
+      email,
       active,
       passwordStatus: 'Temp Password Active',
       tempPassword,
       resettable: role !== 'Admin',
       source: 'Portal Access',
-      mustChangePassword: false
+      mustChangePassword: true
     }
   });
 });
@@ -1916,11 +1898,11 @@ app.post('/api/access-users/:username/reset-password', (req, res) => {
 
   const tempPassword = storeUser.tempPassword || 'changeme123';
   storeUser.password = tempPassword;
-  storeUser.mustChangePassword = false;
+  storeUser.mustChangePassword = true;
 
   appendAuditLog(store, req, 'Reset portal access password', `${storeUser.name || storeUser.username} · ${storeUser.role}`, { username: storeUser.username, role: storeUser.role, name: storeUser.name });
   writeStore(store);
-  res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword, mustChangePassword: false });
+  res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword, mustChangePassword: true });
 });
 
 
