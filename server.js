@@ -454,19 +454,28 @@ function buildWorkerReminderBody(workerGroup, testMode = false) {
   const lines = [
     testMode ? 'TEST WORKER CERTIFICATION ALERT' : 'JAGD Certification Reminder',
     '',
+    testMode ? 'This is a safe test email. No worker was emailed by this test.' : '',
+    '',
     `Hello ${workerGroup.workerName || 'Worker'},`,
     '',
-    'The JAGD Cert Portal shows the following certification item(s) need attention:',
+    'The JAGD Cert Portal shows that the following certification item(s) need attention:',
     '',
-    ...workerGroup.items.map(item => `- ${item.certName}: ${item.status} · Expires ${item.expirationDate} · ${item.reason}`),
+    ...workerGroup.items.map(item => {
+      const certName = item.certName || 'Certification';
+      const status = item.status || 'Needs Attention';
+      const expirationDate = item.expirationDate && item.expirationDate !== '-' ? item.expirationDate : 'No expiration date on file';
+      const reason = item.reason || item.timingLabel || '';
+      return reason
+        ? `- ${certName}: ${status} | Expires: ${expirationDate} | ${reason}`
+        : `- ${certName}: ${status} | Expires: ${expirationDate}`;
+    }),
     '',
     'Please upload the updated certification in the JAGD Worker Portal or send it to the office for review.',
     '',
+    'If you believe any certification listed above is no longer required for your current work, please contact an administrator to have it reviewed and removed from your profile.',
+    '',
     'This message was sent automatically by the JAGD Cert Portal.'
-  ];
-  if (testMode) {
-    lines.splice(2, 0, 'This is a safe test email. No worker was emailed by this test.', '');
-  }
+  ].filter((line, index, arr) => !(line === '' && arr[index - 1] === ''));
   return lines.join('\n');
 }
 
