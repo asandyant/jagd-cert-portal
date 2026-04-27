@@ -451,28 +451,29 @@ function groupWorkerReminderItems(items) {
 }
 
 function buildWorkerReminderBody(workerGroup, testMode = false) {
+  const workerName = workerGroup.workerName || 'Worker';
   const lines = [
-    testMode ? 'TEST WORKER CERTIFICATION ALERT' : 'JAGD Certification Reminder',
+    'JAGD Certification Alert',
     '',
-    testMode ? 'This is a safe test email. No worker was emailed by this test.' : '',
+    `Hello ${workerName},`,
     '',
-    `Hello ${workerGroup.workerName || 'Worker'},`,
-    '',
-    'The JAGD Cert Portal shows that the following certification item(s) need attention:',
+    'Our records show the following certification item(s) are expired, missing an expiration date, or are coming up for renewal:',
     '',
     ...workerGroup.items.map(item => {
       const certName = item.certName || 'Certification';
       const status = item.status || 'Needs Attention';
       const expirationDate = item.expirationDate && item.expirationDate !== '-' ? item.expirationDate : 'No expiration date on file';
       const reason = item.reason || item.timingLabel || '';
-      return reason
-        ? `- ${certName}: ${status} | Expires: ${expirationDate} | ${reason}`
-        : `- ${certName}: ${status} | Expires: ${expirationDate}`;
+      const note = reason ? ` — ${reason}` : '';
+      return `- ${certName}: ${status}; expires ${expirationDate}${note}`;
     }),
     '',
     'Please upload the updated certification in the JAGD Worker Portal or send it to the office for review.',
     '',
     'If you believe any certification listed above is no longer required for your current work, please contact an administrator to have it reviewed and removed from your profile.',
+    '',
+    'Thank you,',
+    'JAGD Construction',
     '',
     'This message was sent automatically by the JAGD Cert Portal.'
   ].filter((line, index, arr) => !(line === '' && arr[index - 1] === ''));
@@ -535,7 +536,7 @@ async function sendWorkerReminderEmails(store, options = {}) {
       items: [{ certName: 'Sample Certification', status: 'Expiring Soon', expirationDate: 'YYYY-MM-DD', reason: '30 day(s) until expiration' }]
     };
     const body = buildWorkerReminderBody(sample, true);
-    const subject = `JAGD Test Worker Alert — ${sample.workerName || 'Sample Worker'}`;
+    const subject = 'JAGD Certification Alert — Your certifications are set to expire or need attention';
     await transporter.sendMail({ from, to: testRecipient, subject, text: body });
     settings.lastWorkerTestAt = auditTimestamp();
     store.meta.emailAlerts = settings;
@@ -548,7 +549,7 @@ async function sendWorkerReminderEmails(store, options = {}) {
       continue;
     }
     const itemCount = (group.items || []).length;
-    const subject = `JAGD Certification Reminder — ${itemCount} item(s) need attention`;
+    const subject = 'JAGD Certification Alert — Your certifications are set to expire or need attention';
     const body = buildWorkerReminderBody(group, false);
     await transporter.sendMail({ from, to: group.email, subject, text: body });
     (group.items || []).forEach(item => markWorkerReminderSent(settings, item));
