@@ -135,6 +135,89 @@ function getEmailAlertSettings(store) {
   return settings;
 }
 
+
+function defaultCertificationAlertRules() {
+  return [
+    {
+      certName: 'Training Pack',
+      aliases: ['Training Pack'],
+      expirationDays: 365,
+      reminderDays: 30,
+      enabled: true,
+      note: 'Annual training pack renewal.'
+    },
+    {
+      certName: 'PFT Fit',
+      aliases: ['PFT Fit', 'Fit Test'],
+      expirationDays: 365,
+      reminderDays: 30,
+      enabled: true,
+      note: 'Annual fit test reminder.'
+    },
+    {
+      certName: 'OSHA 10/30',
+      aliases: ['OSHA 10/30', 'OSHA 30'],
+      expirationDays: 1825,
+      reminderDays: 30,
+      enabled: true,
+      note: 'Flag OSHA 30 older than 5 years when jobs require recent OSHA.'
+    },
+    {
+      certName: 'BLL / ZPP Current',
+      aliases: ['BLL / ZPP Current', 'Bloodwork'],
+      expirationDays: 30,
+      reminderDays: 7,
+      enabled: true,
+      note: 'Typical 30-day bloodwork cycle for lead work. Job conditions may vary.'
+    }
+  ];
+}
+
+function getCertificationAlertRules(store) {
+  store.meta = store.meta || {};
+  const defaults = defaultCertificationAlertRules();
+  const saved = Array.isArray(store.meta.certificationAlertRules) ? store.meta.certificationAlertRules : [];
+  const savedByName = new Map(saved.map(rule => [normalizeCertName(rule.certName || rule.name).toLowerCase(), rule]));
+  const merged = defaults.map(rule => {
+    const savedRule = savedByName.get(normalizeCertName(rule.certName).toLowerCase()) || {};
+    return {
+      ...rule,
+      ...savedRule,
+      certName: normalizeCertName(savedRule.certName || savedRule.name || rule.certName),
+      aliases: Array.isArray(savedRule.aliases) && savedRule.aliases.length ? savedRule.aliases.map(normalizeCertName).filter(Boolean) : rule.aliases,
+      expirationDays: Number.isFinite(Number(savedRule.expirationDays)) ? Number(savedRule.expirationDays) : rule.expirationDays,
+      reminderDays: Number.isFinite(Number(savedRule.reminderDays)) ? Number(savedRule.reminderDays) : rule.reminderDays,
+      enabled: savedRule.enabled === false ? false : rule.enabled !== false,
+      note: savedRule.note !== undefined ? String(savedRule.note || '') : rule.note
+    };
+  });
+  const defaultNames = new Set(merged.map(rule => normalizeCertName(rule.certName).toLowerCase()));
+  saved.forEach(rule => {
+    const name = normalizeCertName(rule.certName || rule.name);
+    if (!name || defaultNames.has(name.toLowerCase())) return;
+    merged.push({
+      certName: name,
+      aliases: Array.isArray(rule.aliases) && rule.aliases.length ? rule.aliases.map(normalizeCertName).filter(Boolean) : [name],
+      expirationDays: Number.isFinite(Number(rule.expirationDays)) ? Number(rule.expirationDays) : 365,
+      reminderDays: Number.isFinite(Number(rule.reminderDays)) ? Number(rule.reminderDays) : 30,
+      enabled: rule.enabled !== false,
+      note: String(rule.note || '')
+    });
+  });
+  store.meta.certificationAlertRules = merged;
+  return merged;
+}
+
+function findCertificationAlertRule(store, certName = '') {
+  const normalized = normalizeCertName(certName).toLowerCase();
+  if (!normalized) return null;
+  return getCertificationAlertRules(store).find(rule => {
+    if (rule.enabled === false) return false;
+    const names = [rule.certName, ...(rule.aliases || [])].map(value => normalizeCertName(value).toLowerCase()).filter(Boolean);
+    return names.includes(normalized);
+  }) || null;
+}
+
 function normalizeEmail(value = '') {
   return String(value || '').trim().toLowerCase();
 }
@@ -180,7 +263,7 @@ function createMailTransporter() {
 function workerCertReminderItems(store) {
   const settings = getEmailAlertSettings(store);
   const reminderDays = settings.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0);
-  const maxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
+  const globalMaxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
   const activeWorkers = (store.workers || []).filter(worker => (worker.employmentStatus || 'Active') === 'Active');
   const rows = [];
 
@@ -188,17 +271,21 @@ function workerCertReminderItems(store) {
     const email = normalizeEmail(worker.email || worker.workerEmail || '');
     (worker.certifications || []).forEach(cert => {
       const certName = normalizeCertName(cert.name || 'Certification');
+      const rule = findCertificationAlertRule(store, certName);
+      const maxDays = rule ? Number(rule.reminderDays || globalMaxDays) : globalMaxDays;
       const expirationDate = String(cert.date || cert.expirationDate || '').trim();
-      const status = String(cert.status || '').trim() || computeExpirationStatus(expirationDate);
+      const computedStatus = computeExpirationStatus(expirationDate);
+      const status = String(cert.status || '').trim() || computedStatus;
       let daysUntil = null;
       if (expirationDate && /^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
         const exp = new Date(`${expirationDate}T00:00:00`);
         daysUntil = Math.floor((exp - TODAY) / (1000 * 60 * 60 * 24));
       }
+      const effectiveStatus = daysUntil !== null && daysUntil < 0 ? 'Expired' : (daysUntil !== null && daysUntil <= maxDays ? 'Expiring Soon' : status);
       const shouldInclude =
-        status.includes('Expired') ||
-        status.includes('Needs Attention') ||
-        status.includes('Expiring') ||
+        effectiveStatus.includes('Expired') ||
+        effectiveStatus.includes('Needs Attention') ||
+        effectiveStatus.includes('Expiring') ||
         (daysUntil !== null && daysUntil <= maxDays);
       if (!shouldInclude) return;
       rows.push({
@@ -208,10 +295,12 @@ function workerCertReminderItems(store) {
         hasValidEmail: isValidEmail(email),
         certName,
         expirationDate: expirationDate || '-',
-        status,
+        status: effectiveStatus,
+        originalStatus: status,
         daysUntil,
         currentJob: worker.currentJob || worker.crew || '-',
-        reason: daysUntil !== null && daysUntil < 0 ? 'Expired' : daysUntil !== null ? `${daysUntil} day(s) until expiration` : status
+        rule: rule ? { certName: rule.certName, expirationDays: rule.expirationDays, reminderDays: rule.reminderDays } : null,
+        reason: daysUntil !== null && daysUntil < 0 ? 'Expired' : daysUntil !== null ? `${daysUntil} day(s) until expiration` : effectiveStatus
       });
     });
   });
@@ -557,6 +646,7 @@ function readStore() {
     writeStore(store);
   }
   getEmailAlertSettings(store);
+  getCertificationAlertRules(store);
   if (store.workers) {
     let changed = false;
     store.workers = store.workers.map((worker, index) => {
@@ -1638,6 +1728,34 @@ app.post('/api/access-users/:username/reset-password', (req, res) => {
 });
 
 
+
+app.put('/api/certification-alert-rules', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const store = readStore();
+  const body = req.body || {};
+  const incoming = Array.isArray(body.rules) ? body.rules : [];
+  const existing = getCertificationAlertRules(store);
+  const byName = new Map(existing.map(rule => [normalizeCertName(rule.certName).toLowerCase(), rule]));
+
+  incoming.forEach(rule => {
+    const name = normalizeCertName(rule.certName || rule.name);
+    if (!name) return;
+    const current = byName.get(name.toLowerCase()) || { certName: name, aliases: [name], expirationDays: 365, reminderDays: 30, enabled: true, note: '' };
+    current.certName = name;
+    current.aliases = Array.isArray(rule.aliases) && rule.aliases.length ? rule.aliases.map(normalizeCertName).filter(Boolean) : (current.aliases || [name]);
+    current.expirationDays = Number.isFinite(Number(rule.expirationDays)) ? Math.max(0, Math.min(3650, Number(rule.expirationDays))) : current.expirationDays;
+    current.reminderDays = Number.isFinite(Number(rule.reminderDays)) ? Math.max(0, Math.min(365, Number(rule.reminderDays))) : current.reminderDays;
+    current.enabled = rule.enabled !== false;
+    current.note = String(rule.note !== undefined ? rule.note : current.note || '');
+    byName.set(name.toLowerCase(), current);
+  });
+
+  store.meta.certificationAlertRules = Array.from(byName.values()).sort((a, b) => String(a.certName || '').localeCompare(String(b.certName || '')));
+  appendAuditLog(store, req, 'Updated certification alert rules', `${store.meta.certificationAlertRules.length} rule(s) saved`);
+  writeStore(store);
+  res.json({ ok: true, certificationAlertRules: store.meta.certificationAlertRules, preview: workerReminderPreview(store) });
+});
+
 app.get('/api/email-alerts/worker-preview', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const store = readStore();
@@ -1702,6 +1820,7 @@ app.get('/api/admin', (req, res) => {
   res.json({
     emailAlerts: emailPreview.settings,
     workerEmailPreview: emailPreview,
+    certificationAlertRules: getCertificationAlertRules(store),
     baselineRequirements: store.meta?.baselineRequirements || [],
     reminderRules: store.meta?.reminderRules || [],
     managedAccounts: managedPortalAccounts(store),

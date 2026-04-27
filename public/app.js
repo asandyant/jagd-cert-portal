@@ -12,6 +12,7 @@ const state = {
   bloodwork: [],
   admin: null,
   workerEmailPreview: null,
+  certificationAlertRules: [],
   certs: [],
   certsSource: '',
   employeeFilter: 'all',
@@ -1049,6 +1050,29 @@ function workerEmailPreviewTable() {
   </tbody></table></div>`;
 }
 
+
+function certificationRulesTable() {
+  const rules = state.certificationAlertRules || state.admin?.certificationAlertRules || [];
+  if (!rules.length) return '<div class="muted">No certification alert rules are configured yet.</div>';
+  return `<div class="table-wrap"><table><thead><tr><th>Certification</th><th>Enabled</th><th>Expires Every</th><th>Reminder Window</th><th>Notes</th></tr></thead><tbody>
+    ${rules.map((rule, index) => `<tr>
+      <td>
+        <strong>${escapeHtml(rule.certName || '-')}</strong>
+        <div class="small muted">${(rule.aliases || []).map(alias => escapeHtml(alias)).join(', ')}</div>
+      </td>
+      <td>
+        <select data-cert-rule-enabled="${index}">
+          <option value="true" ${rule.enabled === false ? '' : 'selected'}>ON</option>
+          <option value="false" ${rule.enabled === false ? 'selected' : ''}>OFF</option>
+        </select>
+      </td>
+      <td><input data-cert-rule-expiration="${index}" type="number" min="0" max="3650" value="${Number(rule.expirationDays || 0)}" /></td>
+      <td><input data-cert-rule-reminder="${index}" type="number" min="0" max="365" value="${Number(rule.reminderDays || 30)}" /></td>
+      <td><input data-cert-rule-note="${index}" value="${escapeHtml(rule.note || '')}" /></td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+
 function officeDigestPreviewText() {
   const alerts = liveAlerts();
   const lines = [
@@ -1124,6 +1148,22 @@ function adminView() {
     <div class="card section">
       <div class="card-header"><div><h2>Worker Email Alert Preview List</h2><div class="sub">Review real worker alert rows before turning on automatic worker emails.</div></div></div>
       <div class="section">${workerEmailPreviewTable()}</div>
+    </div>
+
+    <div class="card section">
+      <div class="card-header">
+        <div><h2>Certification Alert Rules</h2><div class="sub">Master rules for how often key certifications should be renewed. These rules feed the worker email preview and reminders without changing existing worker records.</div></div>
+        <button class="btn dark" id="saveCertificationRulesBtn">Save Certification Rules</button>
+      </div>
+      <div class="section">
+        <div class="tag"><strong>Training Pack:</strong> yearly</div>
+        <div class="tag"><strong>Fit Test:</strong> yearly</div>
+        <div class="tag"><strong>OSHA 30:</strong> 5 years</div>
+        <div class="tag"><strong>Bloodwork:</strong> typical 30-day cycle</div>
+      </div>
+      <div class="small muted section">Expiration and reminder numbers are in days. Leave worker alerts OFF until the preview looks right.</div>
+      <div class="section">${certificationRulesTable()}</div>
+      <div id="certRuleSaveStatus" class="small muted section"></div>
     </div>
   `);
 }
@@ -1349,6 +1389,7 @@ async function refreshData() {
   state.auditLog = await api('/api/audit-log?limit=150');
   state.admin = canViewAdmin() ? await api('/api/admin') : null;
   state.workerEmailPreview = state.admin?.workerEmailPreview || null;
+  state.certificationAlertRules = state.admin?.certificationAlertRules || [];
   const certPayload = await api('/api/certs');
   state.certs = certPayload.certs || [];
   state.certsSource = certPayload.workbookSource || '';
@@ -1481,6 +1522,33 @@ function bindEvents() {
       render();
     } catch (e) {
       if (status) status.textContent = e.message || 'Failed to send worker emails.';
+    }
+  });
+
+
+  document.getElementById('saveCertificationRulesBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('certRuleSaveStatus') || document.getElementById('sendTestDigestStatus');
+    if (status) status.textContent = 'Saving certification alert rules...';
+    try {
+      const currentRules = state.certificationAlertRules || state.admin?.certificationAlertRules || [];
+      const rules = currentRules.map((rule, index) => ({
+        ...rule,
+        enabled: document.querySelector(`[data-cert-rule-enabled="${index}"]`)?.value !== 'false',
+        expirationDays: Number(document.querySelector(`[data-cert-rule-expiration="${index}"]`)?.value || rule.expirationDays || 0),
+        reminderDays: Number(document.querySelector(`[data-cert-rule-reminder="${index}"]`)?.value || rule.reminderDays || 30),
+        note: document.querySelector(`[data-cert-rule-note="${index}"]`)?.value || ''
+      }));
+      const result = await api('/api/certification-alert-rules', {
+        method: 'PUT',
+        body: { rules }
+      });
+      state.certificationAlertRules = result.certificationAlertRules || [];
+      state.workerEmailPreview = result.preview || null;
+      if (status) status.textContent = 'Certification alert rules saved.';
+      await refreshData();
+      render();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Failed to save certification alert rules.';
     }
   });
 
