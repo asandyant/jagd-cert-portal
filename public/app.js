@@ -1074,6 +1074,15 @@ function certificationRulesTable() {
   </tbody></table></div>`;
 }
 
+function certificationRuleAddOptions() {
+  const rules = state.certificationAlertRules || state.admin?.certificationAlertRules || [];
+  const existing = new Set(rules.map(rule => normalizeCertName(rule.certName || '').toLowerCase()).filter(Boolean));
+  const options = (state.certs || [])
+    .filter(cert => cert?.name && !existing.has(normalizeCertName(cert.name).toLowerCase()))
+    .map(cert => `<option value="${escapeHtml(cert.name)}">${escapeHtml(cert.name)}</option>`)
+    .join('');
+  return options || '<option value="">All dropdown certifications already have rules</option>';
+}
 
 function certificationRulesCard() {
   return `
@@ -1087,6 +1096,29 @@ function certificationRulesCard() {
         <div class="tag"><strong>Fit Test:</strong> yearly</div>
         <div class="tag"><strong>OSHA 30:</strong> 5 years</div>
         <div class="tag"><strong>Bloodwork:</strong> typical 30-day cycle</div>
+      </div>
+      <div class="card section" style="background:#f8fafc;box-shadow:none;">
+        <div class="card-header">
+          <div><strong>Add Rule From Certification Dropdown</strong><div class="small muted">Use this for other certs already in the dropdown, including certs Admin adds later.</div></div>
+        </div>
+        <div class="grid grid-3 section">
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Certification</div>
+            <select id="addCertificationRuleName">${certificationRuleAddOptions()}</select>
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Expires Every (days)</div>
+            <input id="addCertificationRuleExpiration" type="number" min="0" max="3650" value="365" />
+          </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Reminder Window (days)</div>
+            <input id="addCertificationRuleReminder" type="number" min="0" max="365" value="30" />
+          </div>
+        </div>
+        <div class="section button-row">
+          <input id="addCertificationRuleNote" placeholder="Optional note" />
+          <button class="btn light" id="addCertificationRuleBtn">Add Rule</button>
+        </div>
       </div>
       <div class="small muted section">Expiration and reminder numbers are in days. Leave worker alerts OFF until the preview looks right.</div>
       <div class="section">${certificationRulesTable()}</div>
@@ -1530,6 +1562,33 @@ function bindEvents() {
     }
   });
 
+
+  document.getElementById('addCertificationRuleBtn')?.addEventListener('click', () => {
+    const status = document.getElementById('certRuleSaveStatus');
+    const certName = document.getElementById('addCertificationRuleName')?.value || '';
+    if (!certName) {
+      if (status) status.textContent = 'Select a certification before adding a rule.';
+      return;
+    }
+    const rules = [...(state.certificationAlertRules || state.admin?.certificationAlertRules || [])];
+    const exists = rules.some(rule => normalizeCertName(rule.certName || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
+    if (exists) {
+      if (status) status.textContent = 'That certification already has a rule.';
+      return;
+    }
+    const cert = (state.certs || []).find(item => normalizeCertName(item.name || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
+    rules.push({
+      certName,
+      aliases: cert?.aliases?.length ? cert.aliases : [certName],
+      enabled: true,
+      expirationDays: Number(document.getElementById('addCertificationRuleExpiration')?.value || 365),
+      reminderDays: Number(document.getElementById('addCertificationRuleReminder')?.value || 30),
+      note: document.getElementById('addCertificationRuleNote')?.value || ''
+    });
+    state.certificationAlertRules = rules;
+    if (state.admin) state.admin.certificationAlertRules = rules;
+    render();
+  });
 
   document.getElementById('saveCertificationRulesBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('certRuleSaveStatus') || document.getElementById('sendTestDigestStatus');
