@@ -242,14 +242,14 @@ function loginView() {
       </div>
       <div class="grid grid-2 section">
         <div class="card">
-          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use office/admin test logins below to open the portal. Worker logins stay tied to each worker profile.</div></div></div>
+          <div class="card-header"><div><h2>Portal Login</h2><div class="sub">Use your Portal Access account or Worker login to open the portal. Default test logins have been removed.</div></div></div>
           <div class="section grid grid-2">
             <div><div class="small muted">Username</div><input id="loginUsername" value="admin" /></div>
             <div><div class="small muted">Password</div><input id="loginPassword" type="password" value="admin123" /></div>
           </div>
           <div class="section button-row">
             <button class="btn dark" id="loginBtn">Enter Portal</button>
-            <div class="pill">admin/admin123 · office/office123 · pm/pm123</div>
+            <div class="pill">Use your assigned username and password</div>
           </div>
           <div id="loginError" class="small" style="color:#991b1b;margin-top:10px;"></div>
         </div>
@@ -1745,7 +1745,7 @@ function bindEvents() {
         render();
         return;
       }
-      document.getElementById('loginError').textContent = 'Login failed. Use admin/admin123, office/office123, or pm/pm123';
+      document.getElementById('loginError').textContent = 'Login failed. Use your assigned Portal Access or Worker account.';
     }
   });
 

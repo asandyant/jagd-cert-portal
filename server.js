@@ -606,45 +606,18 @@ function ensureWorkerPortalAccounts(store) {
 
 
 function managedPortalAccounts(store) {
-  const fallbackUsers = [
-    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User', resettable: false },
-    { username: 'office', password: 'office123', role: 'Office', name: 'Office User', resettable: true },
-    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager', resettable: true }
-  ];
-  const storeUsers = Array.isArray(store.users) ? store.users : [];
-  return fallbackUsers.map(base => {
-    const saved = storeUsers.find(u => String(u.username || '').trim().toLowerCase() === base.username);
-    const activePassword = String(saved?.password || base.password || '').trim();
-    const defaultActive = activePassword === base.password;
-    return {
-      username: base.username,
-      role: base.role,
-      name: saved?.name || base.name,
-      resettable: base.resettable,
-      defaultPassword: base.password,
-      passwordStatus: defaultActive ? 'Default Password Active' : 'Password Changed'
-    };
-  });
+  // Built-in default accounts (admin/admin123, office/office123, pm/pm123)
+  // have been removed for production use. Portal Access users are now the
+  // only Admin / Office / PM login accounts.
+  return [];
 }
 
-
 function getPortalAccessAccounts(store) {
-  const baseAccounts = managedPortalAccounts(store).map(item => ({
-    name: item.name,
-    username: item.username,
-    role: item.role,
-    email: '',
-    active: true,
-    passwordStatus: item.passwordStatus,
-    tempPassword: item.passwordStatus === 'Default Password Active' ? item.defaultPassword : 'Hidden',
-    resettable: item.resettable,
-    source: 'System Default',
-    mustChangePassword: false
-  }));
+  const reservedSystemUsernames = new Set(['admin', 'office', 'pm']);
+  const baseAccounts = [];
 
-  const baseMap = new Map(baseAccounts.map(item => [String(item.username || '').toLowerCase(), item]));
   const customUsers = (store.users || [])
-    .filter(user => !baseMap.has(String(user.username || '').trim().toLowerCase()))
+    .filter(user => !reservedSystemUsernames.has(String(user.username || '').trim().toLowerCase()))
     .map(user => ({
       name: user.name || user.username,
       username: String(user.username || '').trim().toLowerCase(),
@@ -986,23 +959,7 @@ app.post('/api/login', (req, res) => {
   const username = String(req.body?.username || '').trim().toLowerCase();
   const password = String(req.body?.password || '').trim();
   const store = readStore();
-
-  // Emergency built-in access path so the portal can always be recovered.
-  if (username === 'admin' && password === 'admin123') {
-    return res.json({ user: { username: 'admin', role: 'Admin', name: 'Admin User', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
-  }
-  if (username === 'office' && password === 'office123') {
-    return res.json({ user: { username: 'office', role: 'Office', name: 'Office User', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
-  }
-  if (username === 'pm' && password === 'pm123') {
-    return res.json({ user: { username: 'pm', role: 'PM', name: 'Project Manager', workerId: null, email: '', mustChangePassword: false, mustCompleteSetup: false } });
-  }
-
-  const fallbackUsers = [
-    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
-    { username: 'office', password: 'office123', role: 'Office', name: 'Office User' },
-    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager' }
-  ];
+  const reservedSystemUsernames = new Set(['admin', 'office', 'pm']);
 
   const storeUsers = (store.users || []).map(u => ({
     ...u,
@@ -1012,7 +969,7 @@ app.post('/api/login', (req, res) => {
     mustChangePassword: !!u.mustChangePassword,
     active: u.active !== false,
     source: 'Portal Access'
-  })).filter(u => u.active !== false);
+  })).filter(u => u.active !== false && !reservedSystemUsernames.has(u.username));
 
   const workerUsers = (store.workers || []).map(w => ({
     username: String(w.portalUsername || '').trim().toLowerCase(),
@@ -1024,16 +981,14 @@ app.post('/api/login', (req, res) => {
     mustChangePassword: !!w.portalMustChangePassword
   })).filter(u => u.username);
 
-  const allUsers = [...storeUsers, ...workerUsers, ...fallbackUsers];
+  const allUsers = [...storeUsers, ...workerUsers];
   const user = allUsers.find(u => u.username === username && u.password === password);
 
   if (!user) return res.status(401).json({ error: 'Invalid username or password' });
   const email = normalizeEmail(user.email || '');
-  const builtInDefault = ['admin', 'office', 'pm'].includes(user.username) && !user.source;
-  const mustCompleteSetup = !builtInDefault && (!!user.mustChangePassword || !isValidEmail(email));
+  const mustCompleteSetup = !!user.mustChangePassword || !isValidEmail(email);
   res.json({ user: { username: user.username, role: user.role, name: user.name, workerId: user.workerId || null, email, mustChangePassword: !!user.mustChangePassword, mustCompleteSetup } });
 });
-
 
 app.post('/api/account-password-change', (req, res) => {
   const store = readStore();
@@ -1041,37 +996,25 @@ app.post('/api/account-password-change', (req, res) => {
   const currentPassword = String(req.body?.currentPassword || '').trim();
   const newPassword = String(req.body?.newPassword || '').trim();
   const email = normalizeEmail(req.body?.email || '');
+  const reservedSystemUsernames = new Set(['admin', 'office', 'pm']);
 
   if (!username) return res.status(400).send('Username is required.');
+  if (reservedSystemUsernames.has(username)) return res.status(403).send('Default system accounts have been removed. Use your Portal Access account.');
   if (!currentPassword) return res.status(400).send('Current password is required.');
   if (!isValidEmail(email)) return res.status(400).send('A valid email address is required.');
   if (newPassword.length < 6) return res.status(400).send('New password must be at least 6 characters.');
   if (newPassword === currentPassword) return res.status(400).send('New password must be different from the current password.');
 
-  const fallbackUsers = [
-    { username: 'admin', password: 'admin123', role: 'Admin', name: 'Admin User' },
-    { username: 'office', password: 'office123', role: 'Office', name: 'Office User' },
-    { username: 'pm', password: 'pm123', role: 'PM', name: 'Project Manager' }
-  ];
+  const storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
+  if (!storeUser) return res.status(404).send('Account not found.');
+  if (storeUser.active === false) return res.status(403).send('This account is inactive.');
 
-  let storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
-  const fallbackUser = fallbackUsers.find(u => u.username === username);
-
-  if (!storeUser && !fallbackUser) return res.status(404).send('Account not found.');
-
-  const existingPassword = String(storeUser?.password || fallbackUser?.password || '').trim();
+  const existingPassword = String(storeUser.password || '').trim();
   if (existingPassword !== currentPassword) return res.status(401).send('Current password is incorrect.');
 
-  if (!store.users) store.users = [];
-
-  if (storeUser) {
-    storeUser.password = newPassword;
-    storeUser.email = email;
-    storeUser.mustChangePassword = false;
-  } else {
-    storeUser = { username, password: newPassword, role: fallbackUser.role, name: fallbackUser.name, email, mustChangePassword: false };
-    store.users.push(storeUser);
-  }
+  storeUser.password = newPassword;
+  storeUser.email = email;
+  storeUser.mustChangePassword = false;
 
   appendAuditLog(
     store,
@@ -1083,139 +1026,6 @@ app.post('/api/account-password-change', (req, res) => {
   writeStore(store);
   res.json({ ok: true, username: storeUser.username, role: storeUser.role, email: storeUser.email || '', mustChangePassword: false, mustCompleteSetup: false });
 });
-
-
-app.get('/api/dashboard', (req, res) => {
-  const store = readStore();
-  const data = dashboard(store);
-  data.auditLog = store.auditLog || [];
-  data.uploads = store.uploads || [];
-  data.alerts = computeAlerts(store);
-  res.json(data);
-});
-
-app.get('/api/workers', (req, res) => {
-  const store = readStore();
-  const search = String(req.query.search || '').toLowerCase();
-  const filter = String(req.query.filter || 'all');
-  let workers = [...(store.workers || [])];
-  if (search) {
-    workers = workers.filter(w => `${w.name} ${w.crew}`.toLowerCase().includes(search));
-  }
-  if (filter === 'active') workers = workers.filter(w => (w.employmentStatus || 'Active') === 'Active');
-  if (filter === 'inactive') workers = workers.filter(w => (w.employmentStatus || 'Active') === 'Inactive');
-  if (filter === 'terminated') workers = workers.filter(w => (w.employmentStatus || 'Active') === 'Terminated');
-  if (filter === 'archived') workers = workers.filter(w => (w.employmentStatus || 'Active') === 'Archived');
-  if (filter === 'qualified') workers = workers.filter(w => w.status === 'Qualified');
-  if (filter === 'expiring') workers = workers.filter(w => w.status === 'Expiring Soon');
-  if (filter === 'attention') workers = workers.filter(w => w.status === 'Needs Attention');
-  if (filter === 'bloodwork') workers = workers.filter(w => (w.bloodwork || []).length > 0);
-
-  workers.sort((a, b) => {
-    const aLast = String(a.lastName || '').trim().toLowerCase();
-    const bLast = String(b.lastName || '').trim().toLowerCase();
-    const aFirst = String(a.firstName || '').trim().toLowerCase();
-    const bFirst = String(b.firstName || '').trim().toLowerCase();
-    const aName = String(a.name || '').trim().toLowerCase();
-    const bName = String(b.name || '').trim().toLowerCase();
-
-    if (aLast && bLast) {
-      if (aLast !== bLast) return aLast.localeCompare(bLast);
-      return aFirst.localeCompare(bFirst);
-    }
-
-    return aName.localeCompare(bName);
-  });
-
-  res.json(sanitizeWorkersForResponse(req, workers));
-});
-
-app.get('/api/workers/:id', (req, res) => {
-  const store = readStore();
-  const id = Number(req.params.id);
-  const worker = (store.workers || []).find(w => w.id === id);
-  if (!worker) return res.status(404).json({ error: 'Worker not found' });
-  const jobsReady = (store.jobs || []).filter(j => classifyWorkerForJob(worker, j).bucket !== 'notQualified').map(j => j.name);
-  res.json({ ...sanitizeWorkerForResponse(req, worker), jobsReady });
-});
-
-app.post('/api/workers', (req, res) => {
-  if (!requireAdminOrOffice(req, res)) return;
-  const store = readStore();
-  const body = req.body || {};
-  const worker = {
-    id: Date.now(),
-    firstName: body.firstName || '',
-    lastName: body.lastName || '',
-    name: `${body.firstName || ''} ${body.lastName || ''}`.trim(),
-    crew: body.crew || 'Bridge Painting',
-    currentJob: body.currentJob || body.crew || '',
-    status: body.status || 'Needs Attention',
-    nextIssue: body.nextIssue || 'Review worker',
-    employmentStatus: body.employmentStatus || 'Active',
-    email: normalizeEmail(body.email || body.workerEmail || ''),
-    notes: body.notes || '',
-    certifications: body.certifications || [],
-    bloodwork: body.bloodwork || [],
-    driverLicense: body.driverLicense || { class:'N/A', number:'-', state:'', expires:'-', status:'Needs Attention' }
-  };
-  store.workers.push(worker);
-  appendAuditLog(store, req, 'Added worker', worker.name, { workerId: worker.id, workerName: worker.name });
-  writeStore(store);
-  res.json(worker);
-});
-
-app.put('/api/workers/:id', (req, res) => {
-  const store = readStore();
-  const id = Number(req.params.id);
-  const idx = store.workers.findIndex(w => w.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Worker not found' });
-  const body = req.body || {};
-  const existing = store.workers[idx];
-  const allowedStatuses = ['Active','Inactive','Terminated','Archived'];
-  store.workers[idx] = {
-    ...existing,
-    employmentStatus: allowedStatuses.includes(body.employmentStatus) ? body.employmentStatus : existing.employmentStatus,
-    notes: body.notes ?? existing.notes,
-    nextIssue: body.nextIssue ?? existing.nextIssue,
-    crew: body.crew ?? existing.crew,
-    currentJob: body.currentJob ?? existing.currentJob,
-    email: body.email !== undefined ? normalizeEmail(body.email) : (existing.email || '')
-  };
-  appendAuditLog(store, req, 'Updated worker', `${store.workers[idx].name} → ${store.workers[idx].employmentStatus}`, { workerId: store.workers[idx].id, workerName: store.workers[idx].name });
-  writeStore(store);
-  res.json(store.workers[idx]);
-});
-
-app.delete('/api/workers/:id/certifications', (req, res) => {
-  if (!requireAdmin(req, res)) return;
-  const store = readStore();
-  const id = Number(req.params.id);
-  const worker = (store.workers || []).find(w => w.id === id);
-  if (!worker) return res.status(404).json({ error: 'Worker not found' });
-
-  const body = req.body || {};
-  const certName = String(body.certName || '').trim();
-  if (!certName) return res.status(400).json({ error: 'Certification name is required' });
-
-  const certIndex = (worker.certifications || []).findIndex(c => String(c.name || '').trim() === certName);
-  if (certIndex === -1) return res.status(404).json({ error: 'Certification not found' });
-
-  const cert = worker.certifications[certIndex];
-  let fileDeleted = false;
-  if (body.deleteFile) {
-    fileDeleted = deleteUploadedFile(cert.document || '');
-  }
-
-  worker.certifications.splice(certIndex, 1);
-  recomputeWorkerSummary(worker);
-
-  store.uploads = (store.uploads || []).filter(u => !(Number(u.workerId) === id && String(u.certName || '').trim() === certName));
-  appendAuditLog(store, req, 'Deleted certification', `${worker.name} · ${certName}`, { workerId: worker.id, workerName: worker.name, certName });
-  writeStore(store);
-  res.json({ ok: true, certName, fileDeleted });
-});
-
 
 app.post('/api/workers/:id/reset-password', (req, res) => {
   if (!requireAdmin(req, res)) return;
@@ -1770,51 +1580,9 @@ app.get('/api/worker-portal/:id', (req, res) => {
 
 
 app.post('/api/accounts/:username/reset-password', (req, res) => {
-  const store = readStore();
-  const actor = getAuditActor(req);
-  if (String(actor.role || '').trim() !== 'Admin') {
-    return res.status(403).send('Only admin can reset office or PM passwords.');
-  }
-
-  const username = String(req.params.username || '').trim().toLowerCase();
-  const managed = managedPortalAccounts(store).find(item => item.username === username);
-  if (!managed) return res.status(404).send('Account not found.');
-  if (!managed.resettable) return res.status(403).send('Admin accounts must be reset manually.');
-
-  const defaults = {
-    office: { password: 'office123', role: 'Office', name: 'Office User' },
-    pm: { password: 'pm123', role: 'PM', name: 'Project Manager' }
-  };
-  const fallback = defaults[username];
-  if (!fallback) return res.status(400).send('Unsupported account.');
-
-  store.users = Array.isArray(store.users) ? store.users : [];
-  let storeUser = store.users.find(u => String(u.username || '').trim().toLowerCase() === username);
-  if (storeUser) {
-    storeUser.password = fallback.password;
-    storeUser.role = storeUser.role || fallback.role;
-    storeUser.name = storeUser.name || fallback.name;
-  } else {
-    storeUser = {
-      username,
-      password: fallback.password,
-      role: fallback.role,
-      name: fallback.name
-    };
-    store.users.push(storeUser);
-  }
-
-  appendAuditLog(
-    store,
-    req,
-    'Reset office account password',
-    `${storeUser.name || storeUser.username} → ${fallback.password}`,
-    { username: storeUser.username, role: storeUser.role, name: storeUser.name }
-  );
-  writeStore(store);
-  res.json({ ok: true, username: storeUser.username, role: storeUser.role, tempPassword: fallback.password });
+  if (!requireAdmin(req, res)) return;
+  res.status(410).send('Default system accounts have been removed. Use Portal Access password reset instead.');
 });
-
 
 app.get('/api/access-users', (req, res) => {
   const store = readStore();
