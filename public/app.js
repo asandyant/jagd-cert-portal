@@ -1054,12 +1054,17 @@ function workerEmailPreviewTable() {
   const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
   const rows = preview.rows || [];
   if (!rows.length) return '<div class="muted">No worker email alerts are currently ready.</div>';
-  return `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Email</th><th>Items</th><th>Email Status</th><th>Summary</th><th>Action</th></tr></thead><tbody>
+  const sendStatusBadge = (row) => {
+    if (!row.hasValidEmail) return '<span class="badge bg-red">Missing Email</span>';
+    if (row.readyToSend) return '<span class="badge bg-yellow">Ready to Email</span>';
+    return '<span class="badge bg-gray">Already Sent / Waiting</span>';
+  };
+  return `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Email</th><th>Items</th><th>Send Status</th><th>Summary</th><th>Action</th></tr></thead><tbody>
     ${rows.slice(0, 50).map(row => `<tr>
       <td>${escapeHtml(row.workerName || '-')}</td>
       <td>${row.hasValidEmail ? `<span class="badge bg-green">${escapeHtml(row.email)}</span>` : '<span class="badge bg-red">Missing Email</span>'}</td>
       <td>${row.itemCount || 0}</td>
-      <td>${row.readyToSend ? '<span class="badge bg-yellow">Ready to Send</span>' : '<span class="badge bg-gray">Already Sent / Waiting</span>'}</td>
+      <td>${sendStatusBadge(row)}</td>
       <td>${escapeHtml(row.summary || '-')}</td>
       <td>${row.workerId ? `<span class="link" data-open-worker="${row.workerId}">Open Profile</span>` : '-'}</td>
     </tr>`).join('')}
