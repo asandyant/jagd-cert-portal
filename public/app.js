@@ -1258,6 +1258,10 @@ function renderJobEditModal() {
     </div></div>`;
 }
 
+function normalizeCertName(value = '') {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
 function escapeHtml(str) {
   return String(str || '').replaceAll('&', '&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 }
