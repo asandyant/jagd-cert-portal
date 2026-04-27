@@ -484,7 +484,8 @@ function selectedWorkerSection() {
             ` : '<span class="small muted">Admin only</span>'}
           </div>
           <div class="small muted" style="margin-top:14px;">Worker Portal Login</div>
-          <div style="margin-top:6px;font-weight:700;">${worker.portalUsername || '-'} / ${worker.portalPassword || 'worker123'}</div>
+          <div style="margin-top:6px;font-weight:700;">Username: ${worker.portalUsername || '-'}</div>
+          <div class="small muted" style="margin-top:4px;">Password hidden for security. Admin can reset worker passwords when needed.</div>
           <div class="small muted" style="margin-top:14px;">Worker Email Alerts</div>
           <div class="grid grid-2" style="margin-top:8px;">
             <input id="profileWorkerEmail" value="${escapeHtml(worker.email || '')}" placeholder="worker@email.com" ${!canManageWorkers() ? 'disabled' : ''} />

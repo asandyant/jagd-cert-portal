@@ -869,6 +869,21 @@ function workerSummary(worker) {
   };
 }
 
+function sanitizeWorkerForResponse(req, worker) {
+  const actorRole = String(getAuditActor(req).role || '').trim();
+  const safeWorker = { ...worker };
+  // Worker passwords should not be exposed to Office, PM, or Worker views.
+  // Admin can reset passwords when needed, but routine pages should not reveal them.
+  if (actorRole !== 'Admin') {
+    safeWorker.portalPassword = '';
+  }
+  return safeWorker;
+}
+
+function sanitizeWorkersForResponse(req, workers = []) {
+  return workers.map(worker => sanitizeWorkerForResponse(req, worker));
+}
+
 function computeAlerts(store) {
   const workers = store.workers || [];
   const jobs = store.jobs || [];
@@ -1112,7 +1127,7 @@ app.get('/api/workers', (req, res) => {
     return aName.localeCompare(bName);
   });
 
-  res.json(workers);
+  res.json(sanitizeWorkersForResponse(req, workers));
 });
 
 app.get('/api/workers/:id', (req, res) => {
@@ -1121,7 +1136,7 @@ app.get('/api/workers/:id', (req, res) => {
   const worker = (store.workers || []).find(w => w.id === id);
   if (!worker) return res.status(404).json({ error: 'Worker not found' });
   const jobsReady = (store.jobs || []).filter(j => classifyWorkerForJob(worker, j).bucket !== 'notQualified').map(j => j.name);
-  res.json({ ...worker, jobsReady });
+  res.json({ ...sanitizeWorkerForResponse(req, worker), jobsReady });
 });
 
 app.post('/api/workers', (req, res) => {
@@ -1746,7 +1761,7 @@ app.get('/api/worker-portal/:id', (req, res) => {
   if (bloodworkAttention.length) alerts.push({ title: 'Bloodwork alerts', detail: `${bloodworkAttention.length} bloodwork item(s) need attention.` });
   const jobsReady = (store.jobs || []).filter(j => classifyWorkerForJob(worker, j).bucket !== 'notQualified').map(j => j.name);
   res.json({
-    worker: { ...worker, jobsReady },
+    worker: { ...sanitizeWorkerForResponse(req, worker), portalPassword: '', jobsReady },
     uploads,
     alerts
   });
