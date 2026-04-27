@@ -1917,6 +1917,32 @@ app.put('/api/access-users/:username', (req, res) => {
   res.json({ ok: true, username: storeUser.username, active: storeUser.active !== false, role: storeUser.role });
 });
 
+app.delete('/api/access-users/:username', (req, res) => {
+  const store = readStore();
+  const actor = getAuditActor(req);
+  if (String(actor.role || '').trim() !== 'Admin') {
+    return res.status(403).send('Only admin can delete portal access accounts.');
+  }
+
+  const username = String(req.params.username || '').trim().toLowerCase();
+  const reserved = ['admin', 'office', 'pm'];
+  if (reserved.includes(username)) {
+    return res.status(403).send('System default accounts cannot be deleted here. We will disable defaults separately after testing.');
+  }
+  if (username === String(actor.username || '').trim().toLowerCase()) {
+    return res.status(403).send('You cannot delete the account you are currently using.');
+  }
+
+  store.users = Array.isArray(store.users) ? store.users : [];
+  const idx = store.users.findIndex(u => String(u.username || '').trim().toLowerCase() === username);
+  if (idx === -1) return res.status(404).send('Portal access account not found.');
+
+  const removed = store.users.splice(idx, 1)[0];
+  appendAuditLog(store, req, 'Deleted portal access account', `${removed.name || removed.username} · ${removed.role || '-'}`, { username: removed.username, role: removed.role, name: removed.name });
+  writeStore(store);
+  res.json({ ok: true, username });
+});
+
 app.post('/api/access-users/:username/reset-password', (req, res) => {
   const store = readStore();
   const actor = getAuditActor(req);

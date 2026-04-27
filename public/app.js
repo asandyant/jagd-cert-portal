@@ -1581,7 +1581,13 @@ function portalAccessView() {
             <td>${escapeHtml(row.name || '-')}</td>
             <td>${escapeHtml(row.username || '-')}</td>
             <td>${escapeHtml(row.email || 'Needs first-login setup')}</td>
-            <td>${escapeHtml(row.role || '-')}</td>
+            <td>
+              ${row.source === 'Portal Access' ? `
+                <select data-set-access-role="${escapeHtml(row.username)}" style="min-width:120px;">
+                  ${['Admin','Office','PM'].map(role => `<option value="${role}" ${String(row.role || '') === role ? 'selected' : ''}>${role}</option>`).join('')}
+                </select>
+              ` : escapeHtml(row.role || '-')}
+            </td>
             <td>${escapeHtml(row.source || '-')}</td>
             <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
             <td>${escapeHtml(row.tempPassword || 'Hidden')}<div class="small muted">${escapeHtml(row.passwordStatus || '-')}</div></td>
@@ -1589,6 +1595,7 @@ function portalAccessView() {
               <div class="button-row">
                 ${row.source === 'Portal Access' ? `<button class="btn light" data-toggle-access-user="${escapeHtml(row.username)}|${row.active === false ? 'activate' : 'deactivate'}">${row.active === false ? 'Activate' : 'Deactivate'}</button>` : ''}
                 ${(row.resettable && row.role !== 'Admin') ? `<button class="btn light" data-reset-access-user="${escapeHtml(row.username)}">Reset Password</button>` : `<span class="small muted">Manual only</span>`}
+                ${row.source === 'Portal Access' ? `<button class="btn light" data-delete-access-user="${escapeHtml(row.username)}">Delete</button>` : ''}
               </div>
             </td>
           </tr>`).join('')}
@@ -2124,6 +2131,68 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const updatedStatus = document.getElementById('accessUserStatus') || status;
       if (updatedStatus) {
         updatedStatus.textContent = err.message || 'Failed to update portal access account.';
+        updatedStatus.style.color = '#991b1b';
+      }
+    }
+  }));
+
+  document.querySelectorAll('[data-set-access-role]').forEach(select => select.addEventListener('change', async () => {
+    const username = String(select.dataset.setAccessRole || '').trim().toLowerCase();
+    const role = String(select.value || '').trim();
+    const confirmed = await mobileConfirm(`Change this portal access account to ${role}?`, 'Change Portal Access Role');
+    if (!confirmed) {
+      await refreshData();
+      state.view = 'access';
+      render();
+      return;
+    }
+    const status = document.getElementById('accessUserStatus');
+    if (status) {
+      status.textContent = 'Updating portal access role...';
+      status.style.color = '';
+    }
+    try {
+      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'PUT', body: { role } });
+      await refreshData();
+      state.view = 'access';
+      render();
+      const updatedStatus = document.getElementById('accessUserStatus');
+      if (updatedStatus) {
+        updatedStatus.textContent = `Portal access role updated to ${role}.`;
+        updatedStatus.style.color = '#166534';
+      }
+    } catch (err) {
+      const updatedStatus = document.getElementById('accessUserStatus') || status;
+      if (updatedStatus) {
+        updatedStatus.textContent = err.message || 'Failed to update portal access role.';
+        updatedStatus.style.color = '#991b1b';
+      }
+    }
+  }));
+
+  document.querySelectorAll('[data-delete-access-user]').forEach(btn => btn.addEventListener('click', async () => {
+    const username = String(btn.dataset.deleteAccessUser || '').trim().toLowerCase();
+    const confirmed = await mobileConfirm('Delete this portal access account? This only deletes the Portal Access login and does not remove any worker record.', 'Delete Portal Access Account');
+    if (!confirmed) return;
+    const status = document.getElementById('accessUserStatus');
+    if (status) {
+      status.textContent = 'Deleting portal access account...';
+      status.style.color = '';
+    }
+    try {
+      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+      await refreshData();
+      state.view = 'access';
+      render();
+      const updatedStatus = document.getElementById('accessUserStatus');
+      if (updatedStatus) {
+        updatedStatus.textContent = 'Portal access account deleted.';
+        updatedStatus.style.color = '#166534';
+      }
+    } catch (err) {
+      const updatedStatus = document.getElementById('accessUserStatus') || status;
+      if (updatedStatus) {
+        updatedStatus.textContent = err.message || 'Failed to delete portal access account.';
         updatedStatus.style.color = '#991b1b';
       }
     }
