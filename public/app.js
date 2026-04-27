@@ -26,7 +26,7 @@ const state = {
   auditLog: [],
   pendingScrollTarget: null,
   workerPortal: null,
-  modals: { worker: false, job: false, jobEdit: false }
+  modals: { worker: false, job: false, jobEdit: false, addCertDropdown: false }
 };
 
 async function api(path, options = {}) {
@@ -218,6 +218,7 @@ function layout(content) {
     ${renderWorkerModal()}
     ${renderJobModal()}
     ${renderJobEditModal()}
+    ${renderAddCertDropdownModal()}
   `;
 }
 
@@ -656,8 +657,8 @@ function certsView() {
       <div class="card-header">
         <div><h2>Certs</h2><div class="sub">Built from the worker summary sheet so office can see every tracked certification in one place.</div></div>
         <div class="right-note">
-          <button class="btn dark" data-open-cert-upload="">Add / Upload Certification</button>
-          ${String(state.user?.role || '') === 'Admin' ? '<button class="btn light" id="openAddCertDropdownBtn">Add Certification to Dropdown</button>' : ''}
+          <button class="btn dark" data-open-cert-upload="">Add / Upload Employee Certification</button>
+          ${String(state.user?.role || '') === 'Admin' ? '<button class="btn light" id="openAddCertDropdownBtn">Add New Cert to Dropdown</button>' : ''}
           <div class="pill">${escapeHtml(state.certsSource || 'Worker Summary Sheet 2026.xlsx')}</div>
         </div>
       </div>
@@ -1266,6 +1267,63 @@ function renderJobEditModal() {
     </div></div>`;
 }
 
+
+function renderAddCertDropdownModal() {
+  if (!state.modals.addCertDropdown) return '';
+  return `
+    <div class="modal"><div class="modal-box">
+      <div class="flex space-between">
+        <div>
+          <h2>Add New Cert to Dropdown</h2>
+          <div class="sub">Use this when a certification is missing from the dropdown. This does not change existing worker records.</div>
+        </div>
+        <button class="btn light" id="closeAddCertDropdownModal">Close</button>
+      </div>
+      <div class="grid grid-2 section">
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Certification Name</div>
+          <input id="newDropdownCertName" placeholder="Example: Forklift Training" />
+        </div>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Aliases / Source Names (optional)</div>
+          <input id="newDropdownCertAlias" placeholder="Comma separated, optional" />
+        </div>
+      </div>
+      <div class="small muted section">After saving, this cert will be available in certification upload dropdowns and can be added to Certification Alert Rules.</div>
+      <div class="button-row section">
+        <button class="btn dark" id="saveAddCertDropdownBtn">Save New Cert</button>
+        <button class="btn light" id="cancelAddCertDropdownBtn">Cancel</button>
+      </div>
+      <div id="addCertDropdownStatus" class="small muted section"></div>
+    </div></div>`;
+}
+
+function mobileConfirm(message, title = 'Please Confirm') {
+  return new Promise(resolve => {
+    const existing = document.getElementById('mobileConfirmModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'mobileConfirmModal';
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width:560px;">
+        <h2>${escapeHtml(title)}</h2>
+        <div class="section" style="white-space:pre-wrap;line-height:1.45;">${escapeHtml(message)}</div>
+        <div class="button-row section" style="justify-content:flex-end;">
+          <button class="btn light" id="mobileConfirmCancel">Cancel</button>
+          <button class="btn dark" id="mobileConfirmOk">OK</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const cleanup = value => {
+      modal.remove();
+      resolve(value);
+    };
+    modal.querySelector('#mobileConfirmCancel')?.addEventListener('click', () => cleanup(false));
+    modal.querySelector('#mobileConfirmOk')?.addEventListener('click', () => cleanup(true));
+  });
+}
+
 function normalizeCertName(value = '') {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -1604,12 +1662,12 @@ function bindEvents() {
       return;
     }
 
-    const ok = confirm(`Add certification alert rule for ${certName}?
+    const ok = await mobileConfirm(`Add certification alert rule for ${certName}?
 
 Expires Every: ${expirationDays} day(s)
 Reminder Window: ${reminderDays} day(s)
 
-If you click OK, this rule will be added and saved automatically.`);
+If you click OK, this rule will be added and saved automatically.`, 'Add Certification Alert Rule');
     if (!ok) return;
 
     const cert = (state.certs || []).find(item => normalizeCertName(item.name || '').toLowerCase() === normalizeCertName(certName).toLowerCase());
@@ -1655,9 +1713,9 @@ If you click OK, this rule will be added and saved automatically.`);
     const rule = rules[index];
     const status = document.getElementById('certRuleSaveStatus');
     if (!rule) return;
-    const ok = confirm(`Delete certification alert rule for ${rule.certName || 'this certification'}?
+    const ok = await mobileConfirm(`Delete certification alert rule for ${rule.certName || 'this certification'}?
 
-If you click OK, this rule will be removed and saved automatically.`);
+If you click OK, this rule will be removed and saved automatically.`, 'Delete Certification Alert Rule');
     if (!ok) return;
     rules.splice(index, 1);
     if (status) status.textContent = `Deleting ${rule.certName || 'certification'} rule...`;
@@ -1918,25 +1976,45 @@ If you click OK, this rule will be removed and saved automatically.`);
   }));
 
   
-  document.getElementById('openAddCertDropdownBtn')?.addEventListener('click', async () => {
+  document.getElementById('openAddCertDropdownBtn')?.addEventListener('click', () => {
     if (state.user?.role !== 'Admin') {
-      window.alert('Only admin can add certifications to the dropdown.');
+      alert('Only admin can add certifications to the dropdown.');
       return;
     }
-    const name = String(window.prompt('Add Certification to Dropdown\n\nCertification name:', '') || '').trim();
-    if (!name) return;
-    const alias = String(window.prompt('Optional alias/source names (comma separated):', '') || '').trim();
+    state.modals.addCertDropdown = true;
+    render();
+  });
+
+  document.getElementById('closeAddCertDropdownModal')?.addEventListener('click', () => {
+    state.modals.addCertDropdown = false;
+    render();
+  });
+
+  document.getElementById('cancelAddCertDropdownBtn')?.addEventListener('click', () => {
+    state.modals.addCertDropdown = false;
+    render();
+  });
+
+  document.getElementById('saveAddCertDropdownBtn')?.addEventListener('click', async () => {
+    const status = document.getElementById('addCertDropdownStatus');
+    const name = String(document.getElementById('newDropdownCertName')?.value || '').trim();
+    const alias = String(document.getElementById('newDropdownCertAlias')?.value || '').trim();
+    if (!name) {
+      if (status) status.textContent = 'Certification name is required.';
+      return;
+    }
+    if (status) status.textContent = 'Saving new certification dropdown item...';
     try {
       const result = await api('/api/certs/catalog', { method: 'POST', body: { name, alias } });
       await refreshData();
       if (!state.selectedCertName || state.selectedCertName === name || !state.certs.some(c => c.name === state.selectedCertName)) {
         state.selectedCertName = result.name || name;
       }
+      state.modals.addCertDropdown = false;
       state.view = 'certs';
       render();
-      window.alert(result.message || 'Certification added to dropdown.');
     } catch (err) {
-      window.alert(err.message || 'Failed to add certification to dropdown.');
+      if (status) status.textContent = err.message || 'Failed to add certification to dropdown.';
     }
   });
 
@@ -1947,7 +2025,7 @@ If you click OK, this rule will be removed and saved automatically.`);
     }
     const certName = String(btn.dataset.deleteDropdownCert || '').trim();
     if (!certName) return;
-    const confirmed = window.confirm(`Delete "${certName}" from the dropdown? This action cannot be undone. Existing worker records and upload history will not be changed.`);
+    const confirmed = await mobileConfirm(`Delete "${certName}" from the dropdown? This action cannot be undone. Existing worker records and upload history will not be changed.`, 'Delete Cert From Dropdown');
     if (!confirmed) return;
     try {
       const result = await api('/api/certs/catalog', { method: 'DELETE', body: { name: certName } });
