@@ -1891,13 +1891,30 @@ app.put('/api/access-users/:username', (req, res) => {
   const storeUser = (store.users || []).find(u => String(u.username || '').trim().toLowerCase() === username);
   if (!storeUser) return res.status(404).send('Portal access account not found.');
 
+  const changes = [];
+
   if (typeof req.body?.active === 'boolean') {
     storeUser.active = req.body.active;
+    changes.push(storeUser.active === false ? 'deactivated' : 'activated');
   }
 
-  appendAuditLog(store, req, storeUser.active === false ? 'Deactivated portal access' : 'Activated portal access', `${storeUser.name || storeUser.username} · ${storeUser.role}`, { username: storeUser.username, role: storeUser.role, name: storeUser.name });
+  if (req.body?.role !== undefined) {
+    const newRole = String(req.body.role || '').trim();
+    if (!['Admin', 'Office', 'PM'].includes(newRole)) return res.status(400).send('Role must be Admin, Office, or PM.');
+    if (String(storeUser.role || '').trim() !== newRole) {
+      const oldRole = storeUser.role || '-';
+      storeUser.role = newRole;
+      changes.push(`role ${oldRole} → ${newRole}`);
+    }
+  }
+
+  if (!changes.length) {
+    return res.json({ ok: true, username: storeUser.username, active: storeUser.active !== false, role: storeUser.role });
+  }
+
+  appendAuditLog(store, req, 'Updated portal access account', `${storeUser.name || storeUser.username} · ${changes.join(', ')}`, { username: storeUser.username, role: storeUser.role, name: storeUser.name });
   writeStore(store);
-  res.json({ ok: true, username: storeUser.username, active: storeUser.active !== false });
+  res.json({ ok: true, username: storeUser.username, active: storeUser.active !== false, role: storeUser.role });
 });
 
 app.post('/api/access-users/:username/reset-password', (req, res) => {
