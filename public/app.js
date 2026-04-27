@@ -195,8 +195,8 @@ function layout(content) {
           </div>
         </div>
         <div class="snapshot">
-          <div class="small" style="color:#cbd5e1;">Executive Snapshot</div>
-          <div class="sub" style="color:#cbd5e1;">This version includes real imported worker names, 30 current jobs, job requirement editing, add worker/add job, and a working backend.</div>
+          <div class="small" style="color:#cbd5e1;">Portal Snapshot</div>
+          <div class="sub" style="color:#cbd5e1;">Quick view of worker records, active jobs, certifications, alerts, reports, and portal access status.</div>
         </div>
         <div class="nav">
           ${visibleNav.map(([id,label]) => `<button class="${state.view===id?'active':''}" data-nav="${id}">${label}</button>`).join('')}
@@ -585,15 +585,15 @@ function portalSetupView() {
             </div>
             <div>
               <div class="small muted" style="margin-bottom:6px;">Current Password</div>
-              <input id="setupCurrentPassword" type="password" placeholder="Current temporary password" />
+              <input id="setupCurrentPassword" name="setupCurrentPasswordNoAutofill" type="password" placeholder="Current temporary password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
             </div>
             <div>
               <div class="small muted" style="margin-bottom:6px;">New Password</div>
-              <input id="setupNewPassword" type="password" placeholder="New password" />
+              <input id="setupNewPassword" name="setupNewPasswordNoAutofill" type="password" placeholder="New password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
             </div>
             <div>
               <div class="small muted" style="margin-bottom:6px;">Confirm New Password</div>
-              <input id="setupConfirmPassword" type="password" placeholder="Confirm new password" />
+              <input id="setupConfirmPassword" name="setupConfirmPasswordNoAutofill" type="password" placeholder="Confirm new password" autocomplete="new-password" autocapitalize="none" spellcheck="false" value="" />
             </div>
           </div>
           <div class="section small muted">${needsPassword ? 'You must change the temporary password before continuing.' : 'Enter your current password to save your email. You may also set a new password here.'}</div>
@@ -1581,13 +1581,7 @@ function portalAccessView() {
             <td>${escapeHtml(row.name || '-')}</td>
             <td>${escapeHtml(row.username || '-')}</td>
             <td>${escapeHtml(row.email || 'Needs first-login setup')}</td>
-            <td>
-              ${row.source === 'Portal Access' ? `
-                <select data-change-access-role="${escapeHtml(row.username)}" style="min-width:110px;">
-                  ${['Admin','Office','PM'].map(role => `<option value="${role}" ${String(row.role || '')===role ? 'selected' : ''}>${role}</option>`).join('')}
-                </select>
-              ` : escapeHtml(row.role || '-')}
-            </td>
+            <td>${escapeHtml(row.role || '-')}</td>
             <td>${escapeHtml(row.source || '-')}</td>
             <td>${row.active === false ? '<span class="badge bg-red">Inactive</span>' : '<span class="badge bg-green">Active</span>'}</td>
             <td>${escapeHtml(row.tempPassword || 'Hidden')}<div class="small muted">${escapeHtml(row.passwordStatus || '-')}</div></td>
@@ -2130,42 +2124,6 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const updatedStatus = document.getElementById('accessUserStatus') || status;
       if (updatedStatus) {
         updatedStatus.textContent = err.message || 'Failed to update portal access account.';
-        updatedStatus.style.color = '#991b1b';
-      }
-    }
-  }));
-
-
-  document.querySelectorAll('[data-change-access-role]').forEach(select => select.addEventListener('change', async () => {
-    const username = String(select.dataset.changeAccessRole || '').trim().toLowerCase();
-    const newRole = String(select.value || '').trim();
-    const previousRole = String((state.accessUsers || []).find(row => String(row.username || '').trim().toLowerCase() === username)?.role || '').trim();
-    if (!['Admin','Office','PM'].includes(newRole)) return;
-    const confirmed = await mobileConfirm(`Change ${username} to ${newRole}?`, 'Change Portal Access Role');
-    if (!confirmed) {
-      select.value = previousRole || select.value;
-      return;
-    }
-    const status = document.getElementById('accessUserStatus');
-    if (status) {
-      status.textContent = 'Updating portal access role...';
-      status.style.color = '';
-    }
-    try {
-      await api(`/api/access-users/${encodeURIComponent(username)}`, { method: 'PUT', body: { role: newRole } });
-      await refreshData();
-      state.view = 'access';
-      render();
-      const updatedStatus = document.getElementById('accessUserStatus');
-      if (updatedStatus) {
-        updatedStatus.textContent = `Portal access role updated to ${newRole}.`;
-        updatedStatus.style.color = '#166534';
-      }
-    } catch (err) {
-      select.value = previousRole || select.value;
-      const updatedStatus = document.getElementById('accessUserStatus') || status;
-      if (updatedStatus) {
-        updatedStatus.textContent = err.message || 'Failed to update portal access role.';
         updatedStatus.style.color = '#991b1b';
       }
     }
