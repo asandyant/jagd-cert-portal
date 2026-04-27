@@ -118,18 +118,28 @@ function appendAuditLog(store, req, action, detail, extra = {}) {
   if (store.auditLog.length > 500) store.auditLog = store.auditLog.slice(0, 500);
 }
 
+function cleanReminderDays(value) {
+  const source = Array.isArray(value) ? value : String(value || '').split(',');
+  const cleaned = source
+    .map(item => Number(String(item).trim()))
+    .filter(n => Number.isFinite(n) && n >= 0 && n <= 365);
+  const unique = [...new Set(cleaned)];
+  return unique.length ? unique.sort((a, b) => b - a) : [30, 14, 7, 0];
+}
+
 function getEmailAlertSettings(store) {
   store.meta = store.meta || {};
   const existing = store.meta.emailAlerts || {};
   const settings = {
     workerAlertsEnabled: existing.workerAlertsEnabled === true,
     officeDigestEnabled: existing.officeDigestEnabled !== false,
-    reminderDays: Array.isArray(existing.reminderDays) && existing.reminderDays.length ? existing.reminderDays : [30],
+    reminderDays: cleanReminderDays(existing.reminderDays || [30, 14, 7, 0]),
     sendHour: Number.isFinite(Number(existing.sendHour)) ? Number(existing.sendHour) : 6,
     testRecipient: existing.testRecipient || process.env.ALERTS_TO || process.env.SMTP_USER || '',
     lastWorkerAutoRunDate: existing.lastWorkerAutoRunDate || '',
     lastWorkerManualRunAt: existing.lastWorkerManualRunAt || '',
-    lastWorkerTestAt: existing.lastWorkerTestAt || ''
+    lastWorkerTestAt: existing.lastWorkerTestAt || '',
+    lastWorkerEmailSends: existing.lastWorkerEmailSends && typeof existing.lastWorkerEmailSends === 'object' ? existing.lastWorkerEmailSends : {}
   };
   store.meta.emailAlerts = settings;
   return settings;
@@ -302,11 +312,41 @@ function createMailTransporter() {
   });
 }
 
-function workerCertReminderItems(store) {
+function workerReminderThreshold(daysUntil, settings, maxWindow = 30) {
+  if (daysUntil === null || daysUntil === undefined || !Number.isFinite(Number(daysUntil))) return null;
+  const value = Number(daysUntil);
+  if (value < 0) return { key: 'expired', label: 'Expired' };
+  if (value === 0) return { key: 'due-today', label: 'Due today' };
+  const schedule = cleanReminderDays(settings.reminderDays || [30, 14, 7, 0])
+    .filter(day => day > 0 && day <= Number(maxWindow || 30))
+    .sort((a, b) => a - b);
+  const threshold = schedule.find(day => value <= day);
+  return threshold === undefined ? null : { key: `${threshold}-days`, label: `${threshold}-day reminder` };
+}
+
+function workerReminderSendKey(item = {}) {
+  return [
+    item.workerId || 'worker',
+    normalizeCertName(item.certName || 'cert').toLowerCase(),
+    item.expirationDate || '-',
+    item.timingKey || item.thresholdKey || 'attention'
+  ].join('|');
+}
+
+function wasWorkerReminderAlreadySent(settings, item = {}) {
+  const key = workerReminderSendKey(item);
+  return !!(settings.lastWorkerEmailSends || {})[key];
+}
+
+function markWorkerReminderSent(settings, item = {}) {
+  settings.lastWorkerEmailSends = settings.lastWorkerEmailSends && typeof settings.lastWorkerEmailSends === 'object' ? settings.lastWorkerEmailSends : {};
+  settings.lastWorkerEmailSends[workerReminderSendKey(item)] = auditTimestamp();
+}
+
+function workerCertReminderItems(store, options = {}) {
   const settings = getEmailAlertSettings(store);
   getCertificationAlertRules(store);
-  const reminderDays = settings.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0);
-  const defaultMaxDays = reminderDays.length ? Math.max(...reminderDays) : 30;
+  const includeAlreadySent = options.includeAlreadySent !== false;
   const activeWorkers = (store.workers || []).filter(worker => (worker.employmentStatus || 'Active') === 'Active');
   const rows = [];
 
@@ -330,15 +370,21 @@ function workerCertReminderItems(store) {
       }
 
       status = status || 'Current';
-      const ruleReminderDays = resolved.rule ? Number(resolved.rule.reminderDays || 30) : defaultMaxDays;
-      const reminderWindow = Number.isFinite(ruleReminderDays) ? ruleReminderDays : defaultMaxDays;
+      const ruleReminderDays = resolved.rule ? Number(resolved.rule.reminderDays || 30) : Math.max(...cleanReminderDays(settings.reminderDays || [30, 14, 7, 0]));
+      const reminderWindow = Number.isFinite(ruleReminderDays) ? ruleReminderDays : 30;
+      let timing = workerReminderThreshold(daysUntil, settings, reminderWindow);
 
-      const shouldInclude =
-        status.includes('Expired') ||
-        status.includes('Needs Attention') ||
-        status.includes('Expiring') ||
-        (daysUntil !== null && daysUntil <= reminderWindow);
+      if (!timing && resolved.missingExpiration && resolved.rule) {
+        timing = { key: 'missing-expiration', label: 'Missing expiration' };
+      }
+      if (!timing && (status.includes('Expired') || status.includes('Needs Attention'))) {
+        timing = { key: status.includes('Expired') ? 'expired-status' : 'needs-attention', label: status.includes('Expired') ? 'Expired' : 'Needs attention' };
+      }
+      if (!timing && status.includes('Expiring')) {
+        timing = { key: 'expiring-status', label: 'Expiring soon' };
+      }
 
+      const shouldInclude = !!timing;
       if (!shouldInclude) return;
 
       const reason = resolved.missingExpiration && resolved.rule
@@ -349,7 +395,7 @@ function workerCertReminderItems(store) {
             ? `${resolved.reasonPrefix}${daysUntil} day(s) until expiration`
             : status;
 
-      rows.push({
+      const row = {
         workerId: worker.id,
         workerName: worker.name,
         email,
@@ -361,12 +407,21 @@ function workerCertReminderItems(store) {
         currentJob: worker.currentJob || worker.crew || '-',
         reason,
         ruleApplied: !!resolved.ruleApplied,
-        ruleName: resolved.rule?.certName || ''
-      });
+        ruleName: resolved.rule?.certName || '',
+        timingKey: timing.key,
+        timingLabel: timing.label,
+        alreadySent: false,
+        readyToSend: false
+      };
+      row.alreadySent = wasWorkerReminderAlreadySent(settings, row);
+      row.readyToSend = !row.alreadySent;
+      if (!includeAlreadySent && row.alreadySent) return;
+      rows.push(row);
     });
   });
 
   return rows.sort((a, b) => {
+    if (a.alreadySent !== b.alreadySent) return a.alreadySent ? 1 : -1;
     const da = a.daysUntil === null ? 9999 : a.daysUntil;
     const db = b.daysUntil === null ? 9999 : b.daysUntil;
     if (da !== db) return da - db;
@@ -378,8 +433,19 @@ function groupWorkerReminderItems(items) {
   const grouped = new Map();
   items.forEach(item => {
     const key = String(item.workerId || item.workerName || item.email);
-    if (!grouped.has(key)) grouped.set(key, { workerId: item.workerId, workerName: item.workerName, email: item.email, hasValidEmail: item.hasValidEmail, items: [] });
-    grouped.get(key).items.push(item);
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        workerId: item.workerId,
+        workerName: item.workerName,
+        email: item.email,
+        hasValidEmail: item.hasValidEmail,
+        items: []
+      });
+    }
+    const group = grouped.get(key);
+    group.items.push(item);
+    group.readyToSend = group.items.some(row => row.readyToSend);
+    group.alreadySentCount = group.items.filter(row => row.alreadySent).length;
   });
   return Array.from(grouped.values());
 }
@@ -406,12 +472,16 @@ function buildWorkerReminderBody(workerGroup, testMode = false) {
 
 function workerReminderPreview(store) {
   const settings = getEmailAlertSettings(store);
-  const items = workerCertReminderItems(store);
+  const items = workerCertReminderItems(store, { includeAlreadySent: true });
   const grouped = groupWorkerReminderItems(items);
+  const readyGroups = grouped.filter(group => group.hasValidEmail && group.readyToSend);
   return {
     settings,
     totalWorkersWithAlerts: grouped.length,
     totalCertItems: items.length,
+    readyWorkerEmails: readyGroups.length,
+    readyCertItems: items.filter(item => item.readyToSend).length,
+    alreadySentCertItems: items.filter(item => item.alreadySent).length,
     workersWithValidEmail: grouped.filter(group => group.hasValidEmail).length,
     workersMissingEmail: grouped.filter(group => !group.hasValidEmail).length,
     rows: grouped.map(group => ({
@@ -419,8 +489,10 @@ function workerReminderPreview(store) {
       workerName: group.workerName,
       email: group.email || '',
       hasValidEmail: group.hasValidEmail,
+      readyToSend: !!group.readyToSend,
+      alreadySentCount: group.alreadySentCount || 0,
       itemCount: group.items.length,
-      summary: group.items.map(item => `${item.certName} (${item.status}, ${item.expirationDate})`).join('; '),
+      summary: group.items.map(item => `${item.certName} (${item.status}, ${item.expirationDate}, ${item.timingLabel}${item.alreadySent ? ', already sent' : ''})`).join('; '),
       items: group.items
     }))
   };
@@ -437,7 +509,9 @@ async function sendWorkerReminderEmails(store, options = {}) {
   }
 
   const preview = workerReminderPreview(store);
-  const groups = preview.rows;
+  const groups = preview.rows
+    .map(group => ({ ...group, items: (group.items || []).filter(item => item.readyToSend !== false) }))
+    .filter(group => (group.items || []).length > 0);
   const transporter = createMailTransporter();
   const from = process.env.ALERTS_FROM || process.env.SMTP_USER;
   const sent = [];
@@ -464,10 +538,12 @@ async function sendWorkerReminderEmails(store, options = {}) {
       skipped.push({ workerName: group.workerName, reason: 'Missing worker email' });
       continue;
     }
-    const subject = `JAGD Certification Reminder — ${group.itemCount} item(s) need attention`;
+    const itemCount = (group.items || []).length;
+    const subject = `JAGD Certification Reminder — ${itemCount} item(s) need attention`;
     const body = buildWorkerReminderBody(group, false);
     await transporter.sendMail({ from, to: group.email, subject, text: body });
-    sent.push({ workerName: group.workerName, email: group.email, itemCount: group.itemCount });
+    (group.items || []).forEach(item => markWorkerReminderSent(settings, item));
+    sent.push({ workerName: group.workerName, email: group.email, itemCount });
   }
 
   settings.lastWorkerManualRunAt = auditTimestamp();
@@ -1817,9 +1893,8 @@ app.put('/api/email-alerts/settings', (req, res) => {
   if (typeof body.workerAlertsEnabled === 'boolean') settings.workerAlertsEnabled = body.workerAlertsEnabled;
   if (typeof body.officeDigestEnabled === 'boolean') settings.officeDigestEnabled = body.officeDigestEnabled;
   if (body.testRecipient !== undefined) settings.testRecipient = normalizeEmail(body.testRecipient || '');
-  if (Array.isArray(body.reminderDays)) {
-    const cleaned = body.reminderDays.map(Number).filter(n => Number.isFinite(n) && n >= 0 && n <= 365);
-    settings.reminderDays = cleaned.length ? [...new Set(cleaned)].sort((a, b) => b - a) : [30];
+  if (body.reminderDays !== undefined) {
+    settings.reminderDays = cleanReminderDays(body.reminderDays);
   }
 
   store.meta.emailAlerts = settings;

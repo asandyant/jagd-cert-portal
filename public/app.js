@@ -1041,6 +1041,8 @@ function workerEmailPreviewText() {
     `Status: ${settings.workerAlertsEnabled ? 'ON' : 'OFF'}`,
     `Workers with alerts: ${preview.totalWorkersWithAlerts || 0}`,
     `Workers with valid email: ${preview.workersWithValidEmail || 0}`,
+    `Ready to email now: ${preview.readyWorkerEmails || 0}`,
+    `Already sent items: ${preview.alreadySentCertItems || 0}`,
     `Workers missing email: ${preview.workersMissingEmail || 0}`,
     '',
     ...(rows.length ? rows.slice(0, 20).map(row => `- ${row.workerName}: ${row.hasValidEmail ? row.email : 'MISSING EMAIL'} · ${row.summary}`) : ['- No worker email alerts right now.'])
@@ -1052,11 +1054,12 @@ function workerEmailPreviewTable() {
   const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
   const rows = preview.rows || [];
   if (!rows.length) return '<div class="muted">No worker email alerts are currently ready.</div>';
-  return `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Email</th><th>Items</th><th>Summary</th><th>Action</th></tr></thead><tbody>
+  return `<div class="table-wrap"><table><thead><tr><th>Worker</th><th>Email</th><th>Items</th><th>Email Status</th><th>Summary</th><th>Action</th></tr></thead><tbody>
     ${rows.slice(0, 50).map(row => `<tr>
       <td>${escapeHtml(row.workerName || '-')}</td>
       <td>${row.hasValidEmail ? `<span class="badge bg-green">${escapeHtml(row.email)}</span>` : '<span class="badge bg-red">Missing Email</span>'}</td>
       <td>${row.itemCount || 0}</td>
+      <td>${row.readyToSend ? '<span class="badge bg-yellow">Ready to Send</span>' : '<span class="badge bg-gray">Already Sent / Waiting</span>'}</td>
       <td>${escapeHtml(row.summary || '-')}</td>
       <td>${row.workerId ? `<span class="link" data-open-worker="${row.workerId}">Open Profile</span>` : '-'}</td>
     </tr>`).join('')}
@@ -1182,7 +1185,7 @@ function adminView() {
           <div class="tag"><strong>Office Daily Digest:</strong> Test button available</div>
           <div class="tag"><strong>Worker Email Alerts:</strong> ${state.admin?.emailAlerts?.workerAlertsEnabled ? 'ON' : 'OFF'}</div>
           <div class="tag"><strong>Worker Schedule:</strong> Daily around ${(state.admin?.emailAlerts?.sendHour ?? 6)}:00 AM ET when enabled</div>
-          <div class="tag"><strong>Reminder Window:</strong> ${(state.admin?.emailAlerts?.reminderDays || [30]).join(', ')} day(s)</div>
+          <div class="tag"><strong>Smart Timing:</strong> ${(state.admin?.emailAlerts?.reminderDays || [30,14,7,0]).join(', ')} day(s) before / due / expired</div>
         </div>
         <div class="section grid grid-2">
           <div>
@@ -1196,8 +1199,12 @@ function adminView() {
               <option value="true" ${state.admin?.emailAlerts?.workerAlertsEnabled ? 'selected' : ''}>ON - Send Automatically</option>
             </select>
           </div>
+          <div>
+            <div class="small muted" style="margin-bottom:6px;">Smart Reminder Days</div>
+            <input id="workerReminderDays" value="${escapeHtml((state.admin?.emailAlerts?.reminderDays || [30,14,7,0]).join(', '))}" placeholder="30, 14, 7, 0" />
+          </div>
         </div>
-        <div class="small muted section">Safe testing: Send Test Worker Alert emails only the test recipient. It does not email real workers. Send Worker Emails Now uses real worker emails and should only be used after preview looks right.</div>
+        <div class="small muted section">Safe testing: Send Test Worker Alert emails only the test recipient. Smart timing sends each worker/cert once per reminder stage (30, 14, 7, due today, expired) so workers do not get spammed daily.</div>
         <div class="section button-row">
           <button class="btn dark" id="saveWorkerAlertSettingsBtn">Save Email Settings</button>
           <button class="btn light" id="sendTestWorkerAlertBtn">Send Test Worker Alert</button>
@@ -1211,6 +1218,8 @@ function adminView() {
         <div class="small muted">Shows who would receive worker email reminders. Missing email workers are skipped until an email is added to their profile.</div>
         <div class="section">
           <div class="tag"><strong>Workers With Alerts:</strong> ${state.workerEmailPreview?.totalWorkersWithAlerts || state.admin?.workerEmailPreview?.totalWorkersWithAlerts || 0}</div>
+          <div class="tag"><strong>Ready to Email Now:</strong> ${state.workerEmailPreview?.readyWorkerEmails || state.admin?.workerEmailPreview?.readyWorkerEmails || 0}</div>
+          <div class="tag"><strong>Already Sent Items:</strong> ${state.workerEmailPreview?.alreadySentCertItems || state.admin?.workerEmailPreview?.alreadySentCertItems || 0}</div>
           <div class="tag"><strong>Valid Emails:</strong> ${state.workerEmailPreview?.workersWithValidEmail || state.admin?.workerEmailPreview?.workersWithValidEmail || 0}</div>
           <div class="tag"><strong>Missing Emails:</strong> ${state.workerEmailPreview?.workersMissingEmail || state.admin?.workerEmailPreview?.workersMissingEmail || 0}</div>
         </div>
@@ -1675,9 +1684,11 @@ function bindEvents() {
     try {
       const enabled = document.getElementById('workerAlertsEnabled')?.value === 'true';
       const testRecipient = document.getElementById('workerAlertTestRecipient')?.value || '';
+      const reminderDaysText = document.getElementById('workerReminderDays')?.value || '30,14,7,0';
+      const reminderDays = reminderDaysText.split(',').map(x => Number(String(x).trim())).filter(n => Number.isFinite(n) && n >= 0 && n <= 365);
       const result = await api('/api/email-alerts/settings', {
         method: 'PUT',
-        body: { workerAlertsEnabled: enabled, testRecipient, reminderDays: [30] }
+        body: { workerAlertsEnabled: enabled, testRecipient, reminderDays }
       });
       state.workerEmailPreview = result.preview || null;
       if (status) status.textContent = 'Email settings saved.';
@@ -1707,8 +1718,9 @@ function bindEvents() {
 
   document.getElementById('sendWorkerEmailsNowBtn')?.addEventListener('click', async () => {
     const preview = state.workerEmailPreview || state.admin?.workerEmailPreview || {};
-    const sendCount = preview.workersWithValidEmail || 0;
-    if (!confirm(`Send real worker alert email(s) now to ${sendCount} worker(s) with valid email addresses?`)) return;
+    const sendCount = preview.readyWorkerEmails || 0;
+    const proceed = await mobileConfirm(`Send real worker alert email(s) now to ${sendCount} worker(s) ready under the smart timing rules?\n\nWorkers already emailed for the same cert/timing stage will be skipped.`, 'Send Worker Emails Now');
+    if (!proceed) return;
     const status = document.getElementById('sendTestDigestStatus');
     if (status) status.textContent = 'Sending worker emails...';
     try {
