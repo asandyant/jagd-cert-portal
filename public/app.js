@@ -1055,7 +1055,7 @@ function workerEmailPreviewTable() {
 function certificationRulesTable() {
   const rules = state.certificationAlertRules || state.admin?.certificationAlertRules || [];
   if (!rules.length) return '<div class="muted">No certification alert rules are configured yet.</div>';
-  return `<div class="table-wrap"><table><thead><tr><th>Certification</th><th>Enabled</th><th>Expires Every</th><th>Reminder Window</th><th>Notes</th></tr></thead><tbody>
+  return `<div class="table-wrap"><table><thead><tr><th>Certification</th><th>Enabled</th><th>Expires Every</th><th>Reminder Window</th><th>Notes</th><th>Action</th></tr></thead><tbody>
     ${rules.map((rule, index) => `<tr>
       <td>
         <strong>${escapeHtml(rule.certName || '-')}</strong>
@@ -1070,6 +1070,12 @@ function certificationRulesTable() {
       <td><input data-cert-rule-expiration="${index}" type="number" min="0" max="3650" value="${Number(rule.expirationDays || 0)}" /></td>
       <td><input data-cert-rule-reminder="${index}" type="number" min="0" max="365" value="${Number(rule.reminderDays || 30)}" /></td>
       <td><input data-cert-rule-note="${index}" value="${escapeHtml(rule.note || '')}" /></td>
+      <td>
+        <div class="button-row">
+          <button class="btn light" data-edit-cert-rule="${index}" style="padding:8px 12px;">Edit</button>
+          <button class="btn light" data-delete-cert-rule="${index}" style="padding:8px 12px;">Delete</button>
+        </div>
+      </td>
     </tr>`).join('')}
   </tbody></table></div>`;
 }
@@ -1613,6 +1619,31 @@ function bindEvents() {
     alert(`${certName} rule added. Click Save Certification Rules to make it permanent.`);
     render();
   });
+
+  document.querySelectorAll('[data-edit-cert-rule]').forEach(btn => btn.addEventListener('click', () => {
+    const index = Number(btn.dataset.editCertRule);
+    const rules = state.certificationAlertRules || state.admin?.certificationAlertRules || [];
+    const rule = rules[index];
+    const status = document.getElementById('certRuleSaveStatus');
+    const input = document.querySelector(`[data-cert-rule-expiration="${index}"]`);
+    if (input) input.focus();
+    if (status) status.textContent = `Editing ${rule?.certName || 'certification rule'}. Change the row values, then click Save Certification Rules.`;
+  }));
+
+  document.querySelectorAll('[data-delete-cert-rule]').forEach(btn => btn.addEventListener('click', () => {
+    const index = Number(btn.dataset.deleteCertRule);
+    const rules = [...(state.certificationAlertRules || state.admin?.certificationAlertRules || [])];
+    const rule = rules[index];
+    const status = document.getElementById('certRuleSaveStatus');
+    if (!rule) return;
+    const ok = confirm(`Delete certification alert rule for ${rule.certName || 'this certification'}?\n\nThis removes it from the screen only. Click Save Certification Rules to make the deletion permanent.`);
+    if (!ok) return;
+    rules.splice(index, 1);
+    state.certificationAlertRules = rules;
+    if (state.admin) state.admin.certificationAlertRules = rules;
+    if (status) status.textContent = `${rule.certName || 'Certification'} rule removed. Click Save Certification Rules to make it permanent.`;
+    render();
+  }));
 
   document.getElementById('saveCertificationRulesBtn')?.addEventListener('click', async () => {
     const status = document.getElementById('certRuleSaveStatus') || document.getElementById('sendTestDigestStatus');
