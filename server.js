@@ -3,6 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -116,6 +117,15 @@ function requireWorkerCertZipAccess(req, res) {
   const role = String(getAuditActor(req).role || '').trim();
   if (!['Admin', 'Office', 'PM'].includes(role)) {
     res.status(403).send('Admin, Office, or PM access required for worker certification downloads.');
+    return false;
+  }
+  return true;
+}
+
+function requireShareLinkAccess(req, res) {
+  const role = String(getAuditActor(req).role || '').trim();
+  if (!['Admin', 'Office', 'PM'].includes(role)) {
+    res.status(403).send('Admin, Office, or PM access required to generate inspector share links.');
     return false;
   }
   return true;
@@ -1796,6 +1806,127 @@ app.get('/api/workers/:id/certifications.zip', (req, res) => {
   res.send(zip);
 });
 
+function escapeHtmlServer(value = '') {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function requestBaseUrl(req) {
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+  return `${proto}://${req.get('host')}`;
+}
+
+function activeShareLinks(store) {
+  store.meta = store.meta || {};
+  const now = Date.now();
+  const links = Array.isArray(store.meta.shareLinks) ? store.meta.shareLinks : [];
+  store.meta.shareLinks = links.filter(link => {
+    const exp = new Date(link.expiresAt || 0).getTime();
+    return exp && exp > now;
+  }).slice(-200);
+  return store.meta.shareLinks;
+}
+
+function workerShareCertRows(worker) {
+  return (worker.certifications || []).map(cert => {
+    const doc = String(cert.document || '').trim();
+    const downloadable = doc.startsWith('/uploads/');
+    return {
+      name: cert.name || 'Certification',
+      status: cert.status || '-',
+      date: cert.date || cert.expirationDate || '-',
+      document: downloadable ? doc : '',
+      documentLabel: downloadable ? path.basename(doc) : (doc || 'No file attached')
+    };
+  });
+}
+
+app.post('/api/workers/:id/share-link', (req, res) => {
+  if (!requireShareLinkAccess(req, res)) return;
+  const store = readStore();
+  const id = Number(req.params.id);
+  const worker = (store.workers || []).find(w => Number(w.id) === id);
+  if (!worker) return res.status(404).send('Worker not found.');
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const createdAt = auditTimestamp();
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  const actor = getAuditActor(req);
+  const links = activeShareLinks(store);
+  links.push({
+    token,
+    workerId: worker.id,
+    workerName: worker.name || '',
+    createdAt,
+    expiresAt,
+    createdBy: actor.username,
+    createdByName: actor.name,
+    createdByRole: actor.role
+  });
+  store.meta.shareLinks = links;
+  appendAuditLog(store, req, 'Generated inspector share link', `${worker.name || worker.id} · expires ${expiresAt}`, { workerId: worker.id, workerName: worker.name || '' });
+  writeStore(store);
+
+  const pathOnly = `/share/${token}`;
+  res.json({ ok: true, path: pathOnly, url: `${requestBaseUrl(req)}${pathOnly}`, expiresAt });
+});
+
+app.get('/share/:token', (req, res) => {
+  const store = readStore();
+  const token = String(req.params.token || '').trim();
+  const links = activeShareLinks(store);
+  const link = links.find(item => item.token === token);
+  if (!link) {
+    return res.status(404).send(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Share Link Expired</title><style>body{font-family:Arial,sans-serif;background:#f1f5f9;color:#0f172a;padding:24px}.card{max-width:760px;margin:auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 4px 14px rgba(15,23,42,.08)}</style></head><body><div class="card"><h1>Share link expired</h1><p>This certification share link is expired or no longer available. Please contact JAGD for a new link.</p></div></body></html>`);
+  }
+  const worker = (store.workers || []).find(w => Number(w.id) === Number(link.workerId));
+  if (!worker) return res.status(404).send('Worker not found for this share link.');
+  const rows = workerShareCertRows(worker);
+  const certRows = rows.length ? rows.map(row => `
+    <tr>
+      <td>${escapeHtmlServer(row.name)}</td>
+      <td>${escapeHtmlServer(row.status)}</td>
+      <td>${escapeHtmlServer(row.date)}</td>
+      <td>${row.document ? `<a class="btn" href="${escapeHtmlServer(row.document)}" target="_blank" rel="noopener">Open File</a>` : `<span class="muted">${escapeHtmlServer(row.documentLabel)}</span>`}</td>
+    </tr>`).join('') : `<tr><td colspan="4" class="muted">No certification records found for this worker.</td></tr>`;
+  const expires = new Date(link.expiresAt).toLocaleString('en-US', { timeZone: 'America/New_York' });
+  res.send(`<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAGD Worker Certification Share</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#0f172a;padding:20px}.wrap{max-width:1000px;margin:0 auto}.hero{background:#0f172a;color:#fff;border-radius:24px;padding:22px;box-shadow:0 8px 24px rgba(15,23,42,.2)}.card{background:#fff;border-radius:22px;padding:18px;margin-top:18px;box-shadow:0 4px 14px rgba(15,23,42,.06)}h1{margin:0;font-size:28px}.sub{color:#64748b;margin-top:6px}.hero .sub{color:#cbd5e1}.pill{display:inline-block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:7px 10px;font-size:13px;margin:6px 6px 0 0}.table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:16px;margin-top:14px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:12px 14px;border-top:1px solid #e2e8f0;text-align:left;vertical-align:top}th{background:#f8fafc;border-top:none;color:#475569}.btn{display:inline-block;background:#0f172a;color:#fff;text-decoration:none;border-radius:12px;padding:9px 12px;font-weight:700}.muted{color:#64748b}.notice{font-size:13px;color:#475569;line-height:1.45}@media(max-width:700px){body{padding:12px}h1{font-size:23px}th,td{padding:10px 9px;font-size:13px}.hero,.card{border-radius:18px;padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>JAGD Worker Certification Share</h1>
+      <div class="sub">Read-only certification records for inspector / client review.</div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0;">${escapeHtmlServer(worker.name || 'Worker')}</h2>
+      <div class="sub">Employment: ${escapeHtmlServer(worker.employmentStatus || 'Active')} · Current Job: ${escapeHtmlServer(worker.currentJob || worker.crew || '-')}</div>
+      <div class="pill">Expires: ${escapeHtmlServer(expires)} ET</div>
+      <div class="pill">Read only</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Certification</th><th>Status</th><th>Expiration</th><th>Document</th></tr></thead><tbody>${certRows}</tbody></table>
+      </div>
+    </div>
+    <div class="card notice">
+      This link only provides temporary read-only access to the selected worker's certification records. It does not provide access to the JAGD portal or any editing tools. If something appears missing or incorrect, contact JAGD for an updated link or record review.
+    </div>
+  </div>
+</body>
+</html>`);
+});
+
 function currentDateLabel() {
   return TODAY.toLocaleDateString('en-US');
 }
@@ -1908,6 +2039,7 @@ async function sendTestDigestEmail(store) {
 
 async function sendDigestEmail(store) {
   const nodemailer = require('nodemailer');
+const crypto = require('crypto');
   const digest = buildOfficeDigest(store);
 
   const transporter = nodemailer.createTransport({

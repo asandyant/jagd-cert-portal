@@ -529,6 +529,7 @@ function selectedWorkerSection() {
           <div class="button-row section">
             <button class="btn dark" data-open-office-upload="${worker.id}">Open Upload Intake Queue</button>
             ${canDownloadWorkerCertZip() ? `<button class="btn light" data-download-worker-certs="${worker.id}">Download Worker Certs ZIP</button>` : ''}
+            ${canGenerateInspectorShareLink() ? `<button class="btn light" data-generate-worker-share="${worker.id}">Generate Inspector Share Link</button>` : ''}
           </div>
         </div>
         <div class="card">
@@ -1535,6 +1536,10 @@ function formatAuditTime(value) {
 
 
 function canDownloadWorkerCertZip() {
+  return ['Admin', 'Office'].includes(String(state.user?.role || ''));
+}
+
+function canGenerateInspectorShareLink() {
   return ['Admin', 'Office', 'PM'].includes(String(state.user?.role || ''));
 }
 
@@ -1583,6 +1588,45 @@ async function downloadWorkerCertZip(workerId, workerName = '') {
   } catch (err) {
     if (status) {
       status.textContent = err.message || 'Worker certification ZIP download failed.';
+      status.style.color = '#991b1b';
+    }
+  }
+}
+
+
+async function generateWorkerShareLink(workerId, workerName = '') {
+  const status = document.getElementById('workerProfileActionStatus');
+  if (!state.user || !canGenerateInspectorShareLink()) {
+    if (status) {
+      status.textContent = 'Inspector share links are limited to Admin, Office, and PM users.';
+      status.style.color = '#991b1b';
+    }
+    return;
+  }
+  if (status) {
+    status.textContent = 'Generating secure inspector share link...';
+    status.style.color = '#475569';
+  }
+  try {
+    const result = await api(`/api/workers/${workerId}/share-link`, { method: 'POST' });
+    const expires = result.expiresAt ? new Date(result.expiresAt).toLocaleString() : '48 hours';
+    const url = result.url || `${window.location.origin}${result.path || ''}`;
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        copied = true;
+      }
+    } catch (copyErr) {
+      copied = false;
+    }
+    if (status) {
+      status.style.color = '#166534';
+      status.innerHTML = `Inspector share link created${copied ? ' and copied to clipboard' : ''}. Expires ${escapeHtml(expires)}.<br><a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open Share Link</a><br><input value="${escapeHtml(url)}" readonly style="margin-top:8px;" onclick="this.select()" />`;
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message || 'Could not generate inspector share link.';
       status.style.color = '#991b1b';
     }
   }
@@ -2473,6 +2517,12 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
     const workerId = Number(btn.dataset.downloadWorkerCerts);
     const worker = state.workers.find(w => Number(w.id) === workerId) || {};
     downloadWorkerCertZip(workerId, worker.name || 'worker');
+  }));
+
+  document.querySelectorAll('[data-generate-worker-share]').forEach(btn => btn.addEventListener('click', () => {
+    const workerId = Number(btn.dataset.generateWorkerShare);
+    const worker = state.workers.find(w => Number(w.id) === workerId) || {};
+    generateWorkerShareLink(workerId, worker.name || 'worker');
   }));
 
   
