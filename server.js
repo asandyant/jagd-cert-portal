@@ -103,10 +103,10 @@ function requireAdminOrOffice(req, res) {
   return true;
 }
 
-function requireInternalAccess(req, res) {
+function requireExportAccess(req, res) {
   const role = String(getAuditActor(req).role || '').trim();
-  if (!['Admin', 'Office', 'PM'].includes(role)) {
-    res.status(403).send('Admin, Office, or PM access required.');
+  if (!['Admin', 'Office'].includes(role)) {
+    res.status(403).send('Admin or Office access required for exports.');
     return false;
   }
   return true;
@@ -1631,28 +1631,28 @@ function tableHtml(title, headers, rows) {
 }
 
 app.get('/api/export/employees.csv', (req, res) => {
-  if (!requireInternalAccess(req, res)) return;
+  if (!requireExportAccess(req, res)) return;
   const store = readStore();
   const headers = ['Worker Name','First Name','Last Name','Employment Status','Current Job','Compliance Status','Next Issue','Worker Username','Worker Email','Certification Count','Bloodwork Count'];
   sendCsv(res, 'JAGD_Employee_Summary.csv', headers, employeeExportRows(store));
 });
 
 app.get('/api/export/certifications.csv', (req, res) => {
-  if (!requireInternalAccess(req, res)) return;
+  if (!requireExportAccess(req, res)) return;
   const store = readStore();
   const headers = ['Worker Name','Employment Status','Current Job','Certification','Status','Expiration Date','Document','Next Issue'];
   sendCsv(res, 'JAGD_Certification_Details.csv', headers, certificationExportRows(store));
 });
 
 app.get('/api/export/bloodwork.csv', (req, res) => {
-  if (!requireInternalAccess(req, res)) return;
+  if (!requireExportAccess(req, res)) return;
   const store = readStore();
   const headers = ['Worker Name','Employment Status','Current Job','Test Date','Next Due','BLL','ZPP','Status'];
   sendCsv(res, 'JAGD_Bloodwork_Records.csv', headers, bloodworkExportRows(store));
 });
 
 app.get('/api/export/full.xls', (req, res) => {
-  if (!requireInternalAccess(req, res)) return;
+  if (!requireExportAccess(req, res)) return;
   const store = readStore();
   const employeeHeaders = ['Worker Name','First Name','Last Name','Employment Status','Current Job','Compliance Status','Next Issue','Worker Username','Worker Email','Certification Count','Bloodwork Count'];
   const certHeaders = ['Worker Name','Employment Status','Current Job','Certification','Status','Expiration Date','Document','Next Issue'];

@@ -291,6 +291,10 @@ function canAddWorkers() {
   return ['Admin', 'Office'].includes(String(state.user?.role || ''));
 }
 
+function canExportData() {
+  return ['Admin', 'Office'].includes(String(state.user?.role || ''));
+}
+
 function canViewAdmin() {
   return String(state.user?.role || '') === 'Admin';
 }
@@ -443,7 +447,7 @@ function employeesView() {
       <div class="card-header">
         <div><h2>Employees</h2><div class="sub">Search the full imported roster and open worker profiles.</div></div>
         <div class="button-row">
-          <button class="btn light" id="exportEmployeesFromEmployeesBtn">Export Employees</button>
+          ${canExportData() ? '<button class="btn light" id="exportEmployeesFromEmployeesBtn">Export Employees</button>' : ''}
           ${canAddWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
         </div>
       </div>
@@ -1027,13 +1031,15 @@ function reportsView() {
         <div class="card-header">
           <div><h2>Reports & Exports</h2><div class="sub">Download Excel-friendly files for office review, audits, and backup records.</div></div>
         </div>
-        <div class="section button-row">
-          <button class="btn dark" id="exportFullExcelBtn">Export Complete Excel File</button>
-          <button class="btn light" id="exportEmployeesCsvBtn">Employee Summary CSV</button>
-          <button class="btn light" id="exportCertsCsvBtn">Certification Details CSV</button>
-          <button class="btn light" id="exportBloodworkCsvBtn">Bloodwork CSV</button>
-        </div>
-        <div id="exportStatus" class="small muted section"></div>
+        ${canExportData() ? `
+          <div class="section button-row">
+            <button class="btn dark" id="exportFullExcelBtn">Export Complete Excel File</button>
+            <button class="btn light" id="exportEmployeesCsvBtn">Employee Summary CSV</button>
+            <button class="btn light" id="exportCertsCsvBtn">Certification Details CSV</button>
+            <button class="btn light" id="exportBloodworkCsvBtn">Bloodwork CSV</button>
+          </div>
+          <div id="exportStatus" class="small muted section"></div>
+        ` : '<div class="small muted section">Export downloads are available to Admin and Office users only.</div>'}
         <div class="section kpi-grid">
           <div class="kpi" style="background:#f8fafc;">
             <div style="font-weight:700;">Expiring in 30 Days</div>
@@ -1529,9 +1535,9 @@ function formatAuditTime(value) {
 
 async function downloadExportFile(path, fallbackName, statusId = 'exportStatus') {
   const status = document.getElementById(statusId) || document.getElementById('workerProfileActionStatus');
-  if (!state.user || !['Admin', 'Office', 'PM'].includes(String(state.user.role || ''))) {
+  if (!state.user || !canExportData()) {
     if (status) {
-      status.textContent = 'Export access is limited to Admin, Office, and PM users.';
+      status.textContent = 'Export access is limited to Admin and Office users.';
       status.style.color = '#991b1b';
     }
     return;
