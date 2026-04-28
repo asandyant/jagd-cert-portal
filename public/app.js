@@ -528,6 +528,7 @@ function selectedWorkerSection() {
           </div>
           <div class="button-row section">
             <button class="btn dark" data-open-office-upload="${worker.id}">Open Upload Intake Queue</button>
+            ${canDownloadWorkerCertZip() ? `<button class="btn light" data-download-worker-certs="${worker.id}">Download Worker Certs ZIP</button>` : ''}
           </div>
         </div>
         <div class="card">
@@ -1533,6 +1534,60 @@ function formatAuditTime(value) {
 
 
 
+function canDownloadWorkerCertZip() {
+  return ['Admin', 'Office', 'PM'].includes(String(state.user?.role || ''));
+}
+
+async function downloadWorkerCertZip(workerId, workerName = '') {
+  const status = document.getElementById('workerProfileActionStatus');
+  if (!state.user || !canDownloadWorkerCertZip()) {
+    if (status) {
+      status.textContent = 'Worker certification ZIP downloads are limited to Admin, Office, and PM users.';
+      status.style.color = '#991b1b';
+    }
+    return;
+  }
+  if (status) {
+    status.textContent = 'Preparing worker certification ZIP...';
+    status.style.color = '#475569';
+  }
+  try {
+    const res = await fetch(`/api/workers/${workerId}/certifications.zip`, {
+      headers: {
+        'x-actor-username': state.user.username || '',
+        'x-actor-role': state.user.role || '',
+        'x-actor-name': state.user.name || state.user.username || ''
+      }
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Worker certification ZIP download failed.');
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get('content-disposition') || '';
+    const match = disposition.match(/filename=\"?([^\";]+)\"?/i);
+    const safeName = String(workerName || 'worker').replace(/[^a-z0-9_-]+/gi, '_');
+    const filename = match ? match[1] : `${safeName}_certifications.zip`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    if (status) {
+      status.textContent = `Downloaded ${filename}.`;
+      status.style.color = '#166534';
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message || 'Worker certification ZIP download failed.';
+      status.style.color = '#991b1b';
+    }
+  }
+}
+
 async function downloadExportFile(path, fallbackName, statusId = 'exportStatus') {
   const status = document.getElementById(statusId) || document.getElementById('workerProfileActionStatus');
   if (!state.user || !canExportData()) {
@@ -2412,6 +2467,12 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
       const workerSelect = document.getElementById('uploadWorkerId');
       if (workerSelect) workerSelect.value = btn.dataset.openOfficeUpload || '';
     });
+  }));
+
+  document.querySelectorAll('[data-download-worker-certs]').forEach(btn => btn.addEventListener('click', () => {
+    const workerId = Number(btn.dataset.downloadWorkerCerts);
+    const worker = state.workers.find(w => Number(w.id) === workerId) || {};
+    downloadWorkerCertZip(workerId, worker.name || 'worker');
   }));
 
   

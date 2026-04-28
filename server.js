@@ -112,6 +112,15 @@ function requireExportAccess(req, res) {
   return true;
 }
 
+function requireWorkerCertZipAccess(req, res) {
+  const role = String(getAuditActor(req).role || '').trim();
+  if (!['Admin', 'Office', 'PM'].includes(role)) {
+    res.status(403).send('Admin, Office, or PM access required for worker certification downloads.');
+    return false;
+  }
+  return true;
+}
+
 function appendAuditLog(store, req, action, detail, extra = {}) {
   store.auditLog = Array.isArray(store.auditLog) ? store.auditLog : [];
   const actor = getAuditActor(req);
@@ -1661,6 +1670,130 @@ app.get('/api/export/full.xls', (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="JAGD_Cert_Portal_Export.xls"');
   res.send(html);
+});
+
+function zipCrcTable() {
+  const table = [];
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+    table[n] = c >>> 0;
+  }
+  return table;
+}
+const ZIP_CRC_TABLE = zipCrcTable();
+
+function crc32(buffer) {
+  let crc = 0 ^ (-1);
+  for (let i = 0; i < buffer.length; i += 1) crc = (crc >>> 8) ^ ZIP_CRC_TABLE[(crc ^ buffer[i]) & 0xff];
+  return (crc ^ (-1)) >>> 0;
+}
+
+function dosDateTime(date = new Date()) {
+  const year = Math.max(1980, date.getFullYear());
+  return {
+    dosTime: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    dosDate: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+  };
+}
+
+function safeZipEntryName(value = '') {
+  return String(value || '').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120) || 'file';
+}
+
+function buildZipBuffer(files) {
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  const { dosTime, dosDate } = dosDateTime(new Date());
+  files.forEach(file => {
+    const nameBuffer = Buffer.from(file.name, 'utf8');
+    const data = file.data;
+    const crc = crc32(data);
+    const localHeader = Buffer.alloc(30);
+    localHeader.writeUInt32LE(0x04034b50, 0);
+    localHeader.writeUInt16LE(20, 4);
+    localHeader.writeUInt16LE(0x0800, 6);
+    localHeader.writeUInt16LE(0, 8);
+    localHeader.writeUInt16LE(dosTime, 10);
+    localHeader.writeUInt16LE(dosDate, 12);
+    localHeader.writeUInt32LE(crc, 14);
+    localHeader.writeUInt32LE(data.length, 18);
+    localHeader.writeUInt32LE(data.length, 22);
+    localHeader.writeUInt16LE(nameBuffer.length, 26);
+    localHeader.writeUInt16LE(0, 28);
+    localParts.push(localHeader, nameBuffer, data);
+    const centralHeader = Buffer.alloc(46);
+    centralHeader.writeUInt32LE(0x02014b50, 0);
+    centralHeader.writeUInt16LE(20, 4);
+    centralHeader.writeUInt16LE(20, 6);
+    centralHeader.writeUInt16LE(0x0800, 8);
+    centralHeader.writeUInt16LE(0, 10);
+    centralHeader.writeUInt16LE(dosTime, 12);
+    centralHeader.writeUInt16LE(dosDate, 14);
+    centralHeader.writeUInt32LE(crc, 16);
+    centralHeader.writeUInt32LE(data.length, 20);
+    centralHeader.writeUInt32LE(data.length, 24);
+    centralHeader.writeUInt16LE(nameBuffer.length, 28);
+    centralHeader.writeUInt16LE(0, 30);
+    centralHeader.writeUInt16LE(0, 32);
+    centralHeader.writeUInt16LE(0, 34);
+    centralHeader.writeUInt16LE(0, 36);
+    centralHeader.writeUInt32LE(0, 38);
+    centralHeader.writeUInt32LE(offset, 42);
+    centralParts.push(centralHeader, nameBuffer);
+    offset += localHeader.length + nameBuffer.length + data.length;
+  });
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(0, 4);
+  end.writeUInt16LE(0, 6);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(centralSize, 12);
+  end.writeUInt32LE(offset, 16);
+  end.writeUInt16LE(0, 20);
+  return Buffer.concat([...localParts, ...centralParts, end]);
+}
+
+function workerCertificationZipFiles(worker) {
+  const files = [];
+  const usedNames = new Set();
+  (worker.certifications || []).forEach(cert => {
+    const doc = String(cert.document || '').trim();
+    if (!doc.startsWith('/uploads/')) return;
+    const sourcePath = path.join(UPLOADS_DIR, path.basename(doc));
+    if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) return;
+    const originalExt = path.extname(sourcePath) || '.file';
+    const baseName = safeZipEntryName(`${cert.name || 'Certification'}${cert.date ? '_' + cert.date : ''}`);
+    let entryName = `${baseName}${originalExt}`;
+    let n = 2;
+    while (usedNames.has(entryName.toLowerCase())) {
+      entryName = `${baseName}_${n}${originalExt}`;
+      n += 1;
+    }
+    usedNames.add(entryName.toLowerCase());
+    files.push({ name: entryName, data: fs.readFileSync(sourcePath) });
+  });
+  return files;
+}
+
+app.get('/api/workers/:id/certifications.zip', (req, res) => {
+  if (!requireWorkerCertZipAccess(req, res)) return;
+  const store = readStore();
+  const id = Number(req.params.id);
+  const worker = (store.workers || []).find(w => Number(w.id) === id);
+  if (!worker) return res.status(404).send('Worker not found.');
+  const files = workerCertificationZipFiles(worker);
+  if (!files.length) return res.status(404).send('No downloadable certification files were found for this worker. Only uploaded files attached to the worker profile can be included.');
+  const workerName = safeZipEntryName(worker.name || `worker_${worker.id}`);
+  const zip = buildZipBuffer(files);
+  appendAuditLog(store, req, 'Downloaded worker certification ZIP', `${worker.name || worker.id} · ${files.length} file(s)`, { workerId: worker.id, workerName: worker.name || '' });
+  writeStore(store);
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${workerName}_certifications.zip"`);
+  res.send(zip);
 });
 
 function currentDateLabel() {
