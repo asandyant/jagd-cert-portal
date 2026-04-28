@@ -1525,6 +1525,57 @@ function formatAuditTime(value) {
   return d.toLocaleString();
 }
 
+
+
+async function downloadExportFile(path, fallbackName, statusId = 'exportStatus') {
+  const status = document.getElementById(statusId) || document.getElementById('workerProfileActionStatus');
+  if (!state.user || !['Admin', 'Office', 'PM'].includes(String(state.user.role || ''))) {
+    if (status) {
+      status.textContent = 'Export access is limited to Admin, Office, and PM users.';
+      status.style.color = '#991b1b';
+    }
+    return;
+  }
+  if (status) {
+    status.textContent = 'Preparing export...';
+    status.style.color = '#475569';
+  }
+  try {
+    const res = await fetch(path, {
+      headers: {
+        'x-actor-username': state.user.username || '',
+        'x-actor-role': state.user.role || '',
+        'x-actor-name': state.user.name || state.user.username || ''
+      }
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Export failed.');
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get('content-disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const filename = match ? match[1] : fallbackName;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    if (status) {
+      status.textContent = `Downloaded ${filename}.`;
+      status.style.color = '#166534';
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message || 'Export failed.';
+      status.style.color = '#991b1b';
+    }
+  }
+}
+
 function displayAuditRole(row) {
   const directRole = String(row?.actorRole || row?.role || '').trim();
   if (directRole && directRole !== '-') return directRole;
@@ -1826,6 +1877,22 @@ function bindEvents() {
     await refreshData();
     state.view = 'reports';
     render();
+  });
+
+  document.getElementById('exportFullExcelBtn')?.addEventListener('click', () => {
+    downloadExportFile('/api/export/full.xls', 'JAGD_Cert_Portal_Export.xls', 'exportStatus');
+  });
+  document.getElementById('exportEmployeesCsvBtn')?.addEventListener('click', () => {
+    downloadExportFile('/api/export/employees.csv', 'JAGD_Employee_Summary.csv', 'exportStatus');
+  });
+  document.getElementById('exportCertsCsvBtn')?.addEventListener('click', () => {
+    downloadExportFile('/api/export/certifications.csv', 'JAGD_Certification_Details.csv', 'exportStatus');
+  });
+  document.getElementById('exportBloodworkCsvBtn')?.addEventListener('click', () => {
+    downloadExportFile('/api/export/bloodwork.csv', 'JAGD_Bloodwork_Records.csv', 'exportStatus');
+  });
+  document.getElementById('exportEmployeesFromEmployeesBtn')?.addEventListener('click', () => {
+    downloadExportFile('/api/export/employees.csv', 'JAGD_Employee_Summary.csv', 'workerProfileActionStatus');
   });
 
 
