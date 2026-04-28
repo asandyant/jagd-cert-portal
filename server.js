@@ -103,6 +103,15 @@ function requireAdminOrOffice(req, res) {
   return true;
 }
 
+function requireInternalAccess(req, res) {
+  const role = String(getAuditActor(req).role || '').trim();
+  if (!['Admin', 'Office', 'PM'].includes(role)) {
+    res.status(403).send('Admin, Office, or PM access required.');
+    return false;
+  }
+  return true;
+}
+
 function appendAuditLog(store, req, action, detail, extra = {}) {
   store.auditLog = Array.isArray(store.auditLog) ? store.auditLog : [];
   const actor = getAuditActor(req);
@@ -1535,6 +1544,124 @@ app.delete('/api/certs/catalog', (req, res) => {
 });
 
 
+
+
+function csvEscape(value = '') {
+  const text = String(value ?? '');
+  if (/[",\n\r]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+  return text;
+}
+
+function csvFromRows(headers, rows) {
+  return [headers.map(csvEscape).join(','), ...rows.map(row => headers.map(header => csvEscape(row[header] ?? '')).join(','))].join('\n');
+}
+
+function excelEscape(value = '') {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function serverCurrentJobDisplay(worker = {}) {
+  if ((worker.employmentStatus || 'Active') !== 'Active') return '-';
+  return worker.currentJob || worker.assignedJob || worker.crew || '-';
+}
+
+function employeeExportRows(store) {
+  return (store.workers || []).map(worker => ({
+    'Worker Name': worker.name || '',
+    'First Name': worker.firstName || '',
+    'Last Name': worker.lastName || '',
+    'Employment Status': worker.employmentStatus || 'Active',
+    'Current Job': serverCurrentJobDisplay(worker),
+    'Compliance Status': worker.status || '',
+    'Next Issue': worker.nextIssue || '',
+    'Worker Username': worker.portalUsername || '',
+    'Worker Email': worker.email || worker.workerEmail || '',
+    'Certification Count': (worker.certifications || []).length,
+    'Bloodwork Count': (worker.bloodwork || []).length
+  }));
+}
+
+function certificationExportRows(store) {
+  const rows = [];
+  (store.workers || []).forEach(worker => {
+    const certs = worker.certifications || [];
+    if (!certs.length) {
+      rows.push({ 'Worker Name': worker.name || '', 'Employment Status': worker.employmentStatus || 'Active', 'Current Job': serverCurrentJobDisplay(worker), 'Certification': '', 'Status': 'No certifications listed', 'Expiration Date': '', 'Document': '', 'Next Issue': worker.nextIssue || '' });
+      return;
+    }
+    certs.forEach(cert => rows.push({
+      'Worker Name': worker.name || '',
+      'Employment Status': worker.employmentStatus || 'Active',
+      'Current Job': serverCurrentJobDisplay(worker),
+      'Certification': cert.name || '',
+      'Status': cert.status || '',
+      'Expiration Date': cert.date || cert.expirationDate || '',
+      'Document': cert.document || '',
+      'Next Issue': worker.nextIssue || ''
+    }));
+  });
+  return rows;
+}
+
+function bloodworkExportRows(store) {
+  const rows = [];
+  (store.workers || []).forEach(worker => {
+    (worker.bloodwork || []).forEach(row => rows.push({
+      'Worker Name': worker.name || '',
+      'Employment Status': worker.employmentStatus || 'Active',
+      'Current Job': serverCurrentJobDisplay(worker),
+      'Test Date': row.testDate || '',
+      'Next Due': row.nextDue || '',
+      'BLL': row.bll || '',
+      'ZPP': row.zpp || '',
+      'Status': row.status || ''
+    }));
+  });
+  return rows;
+}
+
+function sendCsv(res, filename, headers, rows) {
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+  res.send('\ufeff' + csvFromRows(headers, rows));
+}
+
+function tableHtml(title, headers, rows) {
+  return '<h2>' + excelEscape(title) + '</h2><table border="1"><thead><tr>' + headers.map(h => '<th>' + excelEscape(h) + '</th>').join('') + '</tr></thead><tbody>' + rows.map(row => '<tr>' + headers.map(h => '<td>' + excelEscape(row[h] ?? '') + '</td>').join('') + '</tr>').join('') + '</tbody></table><br/>';
+}
+
+app.get('/api/export/employees.csv', (req, res) => {
+  if (!requireInternalAccess(req, res)) return;
+  const store = readStore();
+  const headers = ['Worker Name','First Name','Last Name','Employment Status','Current Job','Compliance Status','Next Issue','Worker Username','Worker Email','Certification Count','Bloodwork Count'];
+  sendCsv(res, 'JAGD_Employee_Summary.csv', headers, employeeExportRows(store));
+});
+
+app.get('/api/export/certifications.csv', (req, res) => {
+  if (!requireInternalAccess(req, res)) return;
+  const store = readStore();
+  const headers = ['Worker Name','Employment Status','Current Job','Certification','Status','Expiration Date','Document','Next Issue'];
+  sendCsv(res, 'JAGD_Certification_Details.csv', headers, certificationExportRows(store));
+});
+
+app.get('/api/export/bloodwork.csv', (req, res) => {
+  if (!requireInternalAccess(req, res)) return;
+  const store = readStore();
+  const headers = ['Worker Name','Employment Status','Current Job','Test Date','Next Due','BLL','ZPP','Status'];
+  sendCsv(res, 'JAGD_Bloodwork_Records.csv', headers, bloodworkExportRows(store));
+});
+
+app.get('/api/export/full.xls', (req, res) => {
+  if (!requireInternalAccess(req, res)) return;
+  const store = readStore();
+  const employeeHeaders = ['Worker Name','First Name','Last Name','Employment Status','Current Job','Compliance Status','Next Issue','Worker Username','Worker Email','Certification Count','Bloodwork Count'];
+  const certHeaders = ['Worker Name','Employment Status','Current Job','Certification','Status','Expiration Date','Document','Next Issue'];
+  const bloodworkHeaders = ['Worker Name','Employment Status','Current Job','Test Date','Next Due','BLL','ZPP','Status'];
+  const html = '<!doctype html><html><head><meta charset="utf-8"><title>JAGD Cert Portal Export</title></head><body><h1>JAGD Cert Portal Export</h1><p>Generated ' + excelEscape(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })) + '</p>' + tableHtml('Employee Summary', employeeHeaders, employeeExportRows(store)) + tableHtml('Certification Details', certHeaders, certificationExportRows(store)) + tableHtml('Bloodwork Records', bloodworkHeaders, bloodworkExportRows(store)) + '</body></html>';
+  res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="JAGD_Cert_Portal_Export.xls"');
+  res.send(html);
+});
 
 function currentDateLabel() {
   return TODAY.toLocaleDateString('en-US');

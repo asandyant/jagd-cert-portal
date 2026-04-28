@@ -442,7 +442,10 @@ function employeesView() {
     <div class="card">
       <div class="card-header">
         <div><h2>Employees</h2><div class="sub">Search the full imported roster and open worker profiles.</div></div>
-        ${canAddWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
+        <div class="button-row">
+          <button class="btn light" id="exportEmployeesFromEmployeesBtn">Export Employees</button>
+          ${canAddWorkers() ? '<button class="btn dark" id="addWorkerBtn">Add Worker</button>' : ''}
+        </div>
       </div>
       <div class="section filter-row">
         ${[['all','All Workers'],['active','Active'],['inactive','Inactive'],['terminated','Terminated'],['archived','Archived'],['qualified','Qualified'],['expiring','Expiring Soon'],['attention','Needs Attention'],['bloodwork','Has Bloodwork']].map(([id,label])=>`<button class="${state.employeeFilter===id?'active':''}" data-worker-filter="${id}">${label}</button>`).join('')}
@@ -1021,7 +1024,16 @@ function reportsView() {
   return layout(`
     <div class="grid grid-2">
       <div class="card">
-        <h2>Reports & Exports</h2>
+        <div class="card-header">
+          <div><h2>Reports & Exports</h2><div class="sub">Download Excel-friendly files for office review, audits, and backup records.</div></div>
+        </div>
+        <div class="section button-row">
+          <button class="btn dark" id="exportFullExcelBtn">Export Complete Excel File</button>
+          <button class="btn light" id="exportEmployeesCsvBtn">Employee Summary CSV</button>
+          <button class="btn light" id="exportCertsCsvBtn">Certification Details CSV</button>
+          <button class="btn light" id="exportBloodworkCsvBtn">Bloodwork CSV</button>
+        </div>
+        <div id="exportStatus" class="small muted section"></div>
         <div class="section kpi-grid">
           <div class="kpi" style="background:#f8fafc;">
             <div style="font-weight:700;">Expiring in 30 Days</div>
