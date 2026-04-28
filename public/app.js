@@ -531,6 +531,7 @@ function selectedWorkerSection() {
             ${canDownloadWorkerCertZip() ? `<button class="btn light" data-download-worker-certs="${worker.id}">Download Worker Certs ZIP</button>` : ''}
             ${canGenerateInspectorShareLink() ? `<button class="btn light" data-generate-worker-share="${worker.id}">Generate Inspector Share Link</button>` : ''}
           </div>
+          ${canGenerateInspectorShareLink() ? `<div id="workerShareLinkPanel" class="section small muted">Generated inspector links will appear here so they are easy to copy or open.</div>` : ''}
         </div>
         <div class="card">
           <div class="card-header">
@@ -1594,8 +1595,53 @@ async function downloadWorkerCertZip(workerId, workerName = '') {
 }
 
 
+async function copyTextToClipboard(text = '') {
+  const value = String(text || '');
+  if (!value) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch (err) {
+    // Fall back below.
+  }
+  try {
+    const temp = document.createElement('textarea');
+    temp.value = value;
+    temp.setAttribute('readonly', 'readonly');
+    temp.style.position = 'fixed';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.focus();
+    temp.select();
+    const ok = document.execCommand('copy');
+    temp.remove();
+    return !!ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+function renderShareLinkPanel(url = '', expires = '', copied = false) {
+  if (!url) return '';
+  return `
+    <div class="tag" style="display:block;border-radius:16px;padding:12px;margin:0 0 10px 0;background:#f8fafc;">
+      <strong>Inspector Share Link</strong><br>
+      <span class="small muted">Expires ${escapeHtml(expires)}.${copied ? ' Copied to clipboard.' : ' Use Copy Link below if your browser did not copy it automatically.'}</span>
+    </div>
+    <input id="workerShareLinkInput" value="${escapeHtml(url)}" readonly onclick="this.select()" />
+    <div class="button-row" style="margin-top:10px;">
+      <button class="btn dark" data-copy-worker-share="${escapeHtml(url)}">Copy Link</button>
+      <a class="btn light" href="${escapeHtml(url)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">Open Share Link</a>
+    </div>
+    <div id="workerShareCopyStatus" class="small muted" style="margin-top:8px;"></div>
+  `;
+}
+
 async function generateWorkerShareLink(workerId, workerName = '') {
-  const status = document.getElementById('workerProfileActionStatus');
+  const panel = document.getElementById('workerShareLinkPanel');
+  const status = panel || document.getElementById('workerProfileActionStatus');
   if (!state.user || !canGenerateInspectorShareLink()) {
     if (status) {
       status.textContent = 'Inspector share links are limited to Admin, Office, and PM users.';
@@ -1611,18 +1657,10 @@ async function generateWorkerShareLink(workerId, workerName = '') {
     const result = await api(`/api/workers/${workerId}/share-link`, { method: 'POST' });
     const expires = result.expiresAt ? new Date(result.expiresAt).toLocaleString() : '48 hours';
     const url = result.url || `${window.location.origin}${result.path || ''}`;
-    let copied = false;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url);
-        copied = true;
-      }
-    } catch (copyErr) {
-      copied = false;
-    }
+    const copied = await copyTextToClipboard(url);
     if (status) {
       status.style.color = '#166534';
-      status.innerHTML = `Inspector share link created${copied ? ' and copied to clipboard' : ''}. Expires ${escapeHtml(expires)}.<br><a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open Share Link</a><br><input value="${escapeHtml(url)}" readonly style="margin-top:8px;" onclick="this.select()" />`;
+      status.innerHTML = renderShareLinkPanel(url, expires, copied);
     }
   } catch (err) {
     if (status) {
@@ -2523,6 +2561,18 @@ If you click OK, this rule will be removed and saved automatically.`, 'Delete Ce
     const workerId = Number(btn.dataset.generateWorkerShare);
     const worker = state.workers.find(w => Number(w.id) === workerId) || {};
     generateWorkerShareLink(workerId, worker.name || 'worker');
+  }));
+
+  document.querySelectorAll('[data-copy-worker-share]').forEach(btn => btn.addEventListener('click', async () => {
+    const url = btn.dataset.copyWorkerShare || document.getElementById('workerShareLinkInput')?.value || '';
+    const ok = await copyTextToClipboard(url);
+    const status = document.getElementById('workerShareCopyStatus');
+    if (status) {
+      status.textContent = ok ? 'Copied link to clipboard.' : 'Could not auto-copy. Tap the link field above and copy manually.';
+      status.style.color = ok ? '#166534' : '#991b1b';
+    }
+    const input = document.getElementById('workerShareLinkInput');
+    if (input) input.select();
   }));
 
   
